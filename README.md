@@ -79,29 +79,54 @@ All external API calls go through `/api/*` server routes — the WeatherAI key n
 ### Local Development
 
 ```bash
-# Clone the repository
 git clone https://github.com/nyagamunene/agriweather-ai.git
 cd agriweather-ai
+```
 
-# Install dependencies
-npm install
+**Option A — Docker (recommended, includes PostgreSQL):**
 
-# Configure environment
+```bash
+# First-time setup: copies .env.local, starts containers, installs deps, runs migrations
+make dev.setup
+
+# Start the app with hot-reload
+make dev.start
+```
+
+**Option B — Local Node.js only:**
+
+```bash
 cp .env.example .env.local
-# Edit .env.local — add your WeatherAI API key:
-# WEATHER_AI_API_KEY=wai_your_key_here
+# Add your WEATHER_AI_API_KEY to .env.local
 
-# Start dev server
+npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) — it redirects to `/dashboard`.
+
+### Make commands
+
+| Command | Description |
+|---|---|
+| `make dev.setup` | First-time setup (env, containers, deps, migrations) |
+| `make dev.start` | Start app with hot-reload |
+| `make dev.stop` | Stop all containers |
+| `make dev.logs` | Stream container logs |
+| `make dev.console` | Shell into the app container |
+| `make db.console` | Connect to PostgreSQL via psql |
+| `make db.reset` | Drop and recreate the database |
+| `make db.dump` | Dump schema to `db/structure.sql` |
+| `make build` | Production build |
+| `make lint` | Run ESLint |
 
 ### Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
 | `WEATHER_AI_API_KEY` | Yes | WeatherAI API key (prefix: `wai_`) |
+| `DATABASE_URL` | Docker only | PostgreSQL connection string |
+| `POSTGRES_PASSWORD` | Docker only | Database password (default: `agriweather_dev`) |
 
 ---
 

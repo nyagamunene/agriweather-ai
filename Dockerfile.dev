@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+RUN apk add --no-cache libc6-compat curl bash
+
+WORKDIR /app
+
+# Copy package files first for layer caching
+COPY package.json package-lock.json ./
+
+# Install deps (node_modules volume will overlay this in dev)
+RUN npm ci
+
+COPY . .
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Default: keep container alive for `make dev.start` to exec into
+CMD ["sleep", "infinity"]
