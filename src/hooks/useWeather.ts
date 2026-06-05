@@ -29,6 +29,22 @@ export function useWeather(): UseWeatherReturn {
         throw new Error(err.error ?? `Error ${res.status}`);
       }
       const data: WeatherResponse = await res.json();
+
+      // Enrich current with nearest hourly entry (API doesn't include humidity/uv/gust in current)
+      if (data.hourly?.length) {
+        const currentTime = data.current?.time ? new Date(data.current.time).getTime() : Date.now();
+        const nearest = data.hourly.reduce((best, h) =>
+          Math.abs(new Date(h.time).getTime() - currentTime) < Math.abs(new Date(best.time).getTime() - currentTime) ? h : best
+        );
+        data.current = {
+          ...data.current,
+          humidity: data.current.humidity ?? nearest.humidity,
+          feels_like: data.current.feels_like ?? nearest.feels_like,
+          uv_index: data.current.uv_index ?? nearest.uv_index,
+          wind_gust: data.current.wind_gust ?? nearest.wind_gust,
+        };
+      }
+
       setWeather(data);
       weatherRef.current = data;
     } catch (err) {

@@ -90,7 +90,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-3 py-2.5" style={{ background: "var(--bg-raised)" }}>
       <p className="text-xs mb-1" style={{ color: "var(--text-dim)" }}>{label}</p>
-      <p className="text-sm font-semibold tabular-nums" style={{ color: "var(--text)" }}>{value}</p>
+      <p className="text-base font-bold tabular-nums" style={{ color: "var(--text)" }}>{value}</p>
     </div>
   );
 }
