@@ -45,7 +45,7 @@ const MAIN_TABS: { id: MainTab; label: string; count?: string }[] = [
 ];
 
 export default function DashboardPage() {
-  const { weather, recommendations, isLoading, recsLoading, error, fetchWeather, fetchRecommendations } = useWeather();
+  const { weather, recommendations, isLoading, recsLoading, recsError, error, fetchWeather, fetchRecommendations } = useWeather();
   const [selectedCrop, setSelectedCrop] = useState<CropProfile | null>(null);
   const [risks, setRisks] = useState<AgriculturalRisk | null>(null);
   const [activeChart, setActiveChart] = useState<ChartTab>("temperature");
@@ -278,7 +278,7 @@ export default function DashboardPage() {
           <>
             <CropSelector selected={selectedCrop} onChange={setSelectedCrop} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <RecommendationsPanel recommendations={recommendations} cropName={selectedCrop?.name} loading={recsLoading} />
+              <RecommendationsPanel recommendations={recommendations} cropName={selectedCrop?.name} loading={recsLoading} error={recsError} />
               {risks ? (
                 <RiskAnalysis risks={risks} />
               ) : (

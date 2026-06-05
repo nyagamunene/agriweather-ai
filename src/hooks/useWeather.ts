@@ -9,6 +9,7 @@ interface UseWeatherReturn {
   isLoading: boolean;
   recsLoading: boolean;
   error: string | null;
+  recsError: string | null;
   fetchWeather: (lat: number, lon: number) => Promise<void>;
   fetchRecommendations: (crop: CropProfile) => Promise<void>;
 }
@@ -19,6 +20,7 @@ export function useWeather(): UseWeatherReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [recsLoading, setRecsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recsError, setRecsError] = useState<string | null>(null);
   const weatherRef = useRef<WeatherResponse | null>(null);
 
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
@@ -60,6 +62,7 @@ export function useWeather(): UseWeatherReturn {
     const w = weatherRef.current;
     if (!w) return;
     setRecsLoading(true);
+    setRecsError(null);
     setRecommendations([]);
     try {
       const res = await fetch("/api/recommendations", {
@@ -67,17 +70,20 @@ export function useWeather(): UseWeatherReturn {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ current: w.current, forecast: w.daily, crop }),
       });
-      if (!res.ok) return;
-      const { recommendations: recs } = await res.json();
-      setRecommendations(recs ?? []);
+      const data = await res.json();
+      if (!res.ok) {
+        setRecsError(data.error ?? `Error ${res.status}`);
+        return;
+      }
+      setRecommendations(data.recommendations ?? []);
     } catch {
-      // non-blocking
+      setRecsError("Failed to reach recommendations service");
     } finally {
       setRecsLoading(false);
     }
   }, []);
 
-  return { weather, recommendations, isLoading, recsLoading, error, fetchWeather, fetchRecommendations };
+  return { weather, recommendations, isLoading, recsLoading, error, recsError, fetchWeather, fetchRecommendations };
 }
 
 export async function searchLocations(query: string): Promise<GeocodingResult[]> {

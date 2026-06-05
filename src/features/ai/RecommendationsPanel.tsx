@@ -6,7 +6,7 @@ interface Props {
   recommendations: FarmingRecommendation[];
   cropName?: string;
   loading?: boolean;
-  error?: boolean;
+  error?: string | null;
 }
 
 const priorityMeta = {
@@ -47,7 +47,13 @@ export function RecommendationsPanel({ recommendations, cropName, loading, error
         <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
           <span className="text-3xl font-mono" style={{ color: "var(--text-dim)" }}>⚠</span>
           <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>No recommendations available</p>
-          <p className="text-xs" style={{ color: "var(--text-dim)" }}>Unable to generate advice for {cropName}. Check that GEMINI_API_KEY is configured or try another crop.</p>
+          <p className="text-xs max-w-xs" style={{ color: "var(--text-dim)" }}>
+            {error
+              ? error.toLowerCase().includes("quota") || error.toLowerCase().includes("resource_exhausted")
+                ? "Gemini AI quota exceeded. Upgrade your Google AI plan or wait for quota reset."
+                : error
+              : `Unable to generate advice for ${cropName}.`}
+          </p>
         </div>
       ) : (
         <div className="space-y-2.5">
