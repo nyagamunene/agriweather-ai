@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { saveTreeAnalysis } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.WEATHER_AI_API_KEY;
@@ -9,10 +10,8 @@ export async function POST(req: NextRequest) {
     const image = form.get("image") as File | null;
     if (!image) return NextResponse.json({ error: "No image provided" }, { status: 400 });
 
-    // Forward multipart form to WeatherAI
     const upstream = new FormData();
     upstream.append("image", image, image.name);
-    // optional fields
     for (const field of ["farmerId", "county", "landAcres", "location", "notes"]) {
       const val = form.get(field);
       if (val) upstream.append(field, val as string);
@@ -26,6 +25,27 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json();
     if (!res.ok) return NextResponse.json({ error: data.error ?? `API error ${res.status}` }, { status: res.status });
+
+    // Persist analysis to DB (non-blocking, silent failure)
+    saveTreeAnalysis({
+      analysis_id: data.analysis_id,
+      county: data.county,
+      land_acres: data.land_acres,
+      total_tree_count: data.total_tree_count,
+      tree_density_per_acre: data.tree_density_per_acre,
+      confidence_score: data.confidence_score,
+      canopy_coverage_pct: data.canopy_coverage_pct,
+      health_healthy: data.tree_health?.healthy,
+      health_needs_care: data.tree_health?.needs_care,
+      health_needs_replacement: data.tree_health?.needs_replacement,
+      tree_species_guess: data.tree_species_guess,
+      low_confidence: data.low_confidence,
+      observations: data.observations,
+      recommendations: data.recommendations,
+      original_image_url: data.original_image_url,
+      overlay_image_url: data.overlay_image_url,
+    });
+
     return NextResponse.json(data);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Upload failed" }, { status: 500 });

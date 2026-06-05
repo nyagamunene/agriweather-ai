@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { GeocodingResult } from "@/types/weather";
 import { searchLocations } from "@/hooks/useWeather";
+import { MapPicker } from "@/components/MapPicker";
 
 interface Props {
   onSelect: (result: GeocodingResult) => void;
@@ -13,6 +14,7 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
   const [results, setResults] = useState<GeocodingResult[]>([]);
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +48,17 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
     onSelect(loc);
   }
 
+  function handleMapConfirm(result: { lat: number; lon: number; name: string } | { lat: number; lon: number; acres: number }) {
+    if ("name" in result) {
+      onSelect({
+        name: result.name,
+        lat: result.lat,
+        lon: result.lon,
+        country: "",
+      });
+    }
+  }
+
   return (
     <div ref={containerRef} className="relative w-full">
       <div className="relative">
@@ -69,7 +82,7 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search location..."
-          className="w-full pl-9 pr-4 py-1.5 text-sm"
+          className="w-full pl-9 pr-14 py-1.5 text-sm"
           style={{
             background: "var(--bg-raised)",
             border: "1px solid var(--border)",
@@ -84,7 +97,33 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
             (e.target as HTMLInputElement).style.borderColor = "var(--border)";
           }}
         />
+        <button
+          onClick={() => setMapOpen(true)}
+          className="absolute right-1 top-1/2 -translate-y-1/2 text-xs px-2 py-1"
+          style={{
+            color: "var(--text-dim)",
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-soft)",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--text-dim)";
+          }}
+        >
+          ⊕ Map
+        </button>
       </div>
+
+      <MapPicker
+        mode="location"
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        onConfirm={handleMapConfirm}
+      />
 
       {open && results.length > 0 && (
         <div

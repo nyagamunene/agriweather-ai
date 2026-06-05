@@ -10,6 +10,8 @@ import { CropSelector } from "@/features/crops/CropSelector";
 import { RecommendationsPanel } from "@/features/ai/RecommendationsPanel";
 import { RiskAnalysis } from "@/features/ai/RiskAnalysis";
 import { TreeAnalysis } from "@/features/trees/TreeAnalysis";
+import { ReportGenerator } from "@/features/reports/ReportGenerator";
+import { HistoryPanel } from "@/features/history/HistoryPanel";
 import { calculateRisks } from "@/features/crops/risk-calculator";
 import type { CropProfile, AgriculturalRisk } from "@/types/crops";
 import type { GeocodingResult } from "@/types/weather";
@@ -24,7 +26,7 @@ const DEFAULT_LOCATION: GeocodingResult = {
 };
 
 type ChartTab = "temperature" | "rainfall" | "wind";
-type MainTab = "weather" | "crops" | "trees";
+type MainTab = "weather" | "crops" | "trees" | "reports" | "history";
 
 const CHART_TABS: { id: ChartTab; label: string }[] = [
   { id: "temperature", label: "Temperature" },
@@ -36,6 +38,8 @@ const MAIN_TABS: { id: MainTab; label: string; count?: string }[] = [
   { id: "weather", label: "Weather" },
   { id: "crops", label: "Crop Intelligence" },
   { id: "trees", label: "Tree Analysis" },
+  { id: "reports", label: "Reports" },
+  { id: "history", label: "History" },
 ];
 
 export default function DashboardPage() {
@@ -250,6 +254,26 @@ export default function DashboardPage() {
         {/* ── TREES TAB ───────────────────────────────────────────────────── */}
         {mainTab === "trees" && (
           <TreeAnalysis quota={treeQuota ?? undefined} />
+        )}
+
+        {/* ── REPORTS TAB ─────────────────────────────────────────────────── */}
+        {mainTab === "reports" && weather && (
+          <ReportGenerator
+            weather={weather}
+            location={location}
+            selectedCrop={selectedCrop}
+            risks={risks}
+            recommendations={recommendations}
+          />
+        )}
+
+        {mainTab === "reports" && !weather && !isLoading && (
+          <EmptyState icon="📄" title="No weather data" body="Search for a location first to generate reports." />
+        )}
+
+        {/* ── HISTORY TAB ─────────────────────────────────────────────────── */}
+        {mainTab === "history" && (
+          <HistoryPanel onLocationSelect={handleLocationSelect} />
         )}
 
         {/* Empty weather state */}

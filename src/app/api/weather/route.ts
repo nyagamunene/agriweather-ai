@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { saveLocation, saveWeatherCache } from "@/lib/db";
 
 const BASE_URL = "https://api.weather-ai.co";
 
@@ -32,6 +33,11 @@ export async function GET(req: NextRequest) {
       }
 
       const data = await res.json();
+
+      // Persist location and weather cache (non-blocking, silent failures)
+      saveLocation(data.location?.city ?? `${lat},${lon}`, lat, lon, data.location?.country, data.location?.timezone);
+      saveWeatherCache(lat, lon, days, data);
+
       return NextResponse.json(data, {
         headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200" },
       });

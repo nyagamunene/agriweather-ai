@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
+import { MapPicker } from "@/components/MapPicker";
 
 interface TreeResult {
   analysis_id: string;
@@ -30,6 +31,7 @@ export function TreeAnalysis({ quota }: Props) {
   const [showOverlay, setShowOverlay] = useState(true);
   const [county, setCounty] = useState("");
   const [landAcres, setLandAcres] = useState("");
+  const [mapOpen, setMapOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
 
@@ -92,6 +94,38 @@ export function TreeAnalysis({ quota }: Props) {
       <p className="text-xs mb-4 leading-relaxed" style={{ color: "var(--text-dim)" }}>
         Upload a drone or aerial image. The CV engine counts tree crowns, assesses canopy health, and generates agronomic recommendations. 5 analyses/month on free tier.
       </p>
+
+      {/* Map boundary selector */}
+      <button
+        onClick={() => setMapOpen(true)}
+        className="w-full mb-3 py-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+        style={{
+          background: "var(--bg-raised)",
+          border: "1px solid var(--border-soft)",
+          borderRadius: "5px",
+          color: "var(--text-muted)",
+          cursor: "pointer",
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+        onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+          <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+        </svg>
+        Select on map
+      </button>
+
+      <MapPicker
+        mode="boundary"
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        onConfirm={(result) => {
+          if ("acres" in result) {
+            setLandAcres(String(result.acres));
+          }
+        }}
+      />
 
       {/* Upload zone */}
       <div
