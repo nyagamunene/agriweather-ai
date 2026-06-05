@@ -80,7 +80,7 @@ All external API calls go through `/api/*` server routes — the WeatherAI key n
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/agriweather-ai.git
+git clone https://github.com/nyagamunene/agriweather-ai.git
 cd agriweather-ai
 
 # Install dependencies
