@@ -12,6 +12,8 @@ import { RiskAnalysis } from "@/features/ai/RiskAnalysis";
 import { TreeAnalysis } from "@/features/trees/TreeAnalysis";
 import { ReportGenerator } from "@/features/reports/ReportGenerator";
 import { HistoryPanel } from "@/features/history/HistoryPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ActionSummary } from "@/features/ai/ActionSummary";
 import { calculateRisks } from "@/features/crops/risk-calculator";
 import type { CropProfile, AgriculturalRisk } from "@/types/crops";
 import type { GeocodingResult } from "@/types/weather";
@@ -37,23 +39,27 @@ const CHART_TABS: { id: ChartTab; label: string }[] = [
 const MAIN_TABS: { id: MainTab; label: string; count?: string }[] = [
   { id: "weather", label: "Weather" },
   { id: "crops", label: "Crop Intelligence" },
-  { id: "trees", label: "Tree Analysis" },
+  { id: "trees", label: "Plot Health" },
   { id: "reports", label: "Reports" },
   { id: "history", label: "History" },
 ];
 
 export default function DashboardPage() {
-  const { weather, recommendations, isLoading, error, fetchWeather, fetchRecommendations } = useWeather();
+  const { weather, recommendations, isLoading, recsLoading, error, fetchWeather, fetchRecommendations } = useWeather();
   const [selectedCrop, setSelectedCrop] = useState<CropProfile | null>(null);
   const [risks, setRisks] = useState<AgriculturalRisk | null>(null);
   const [activeChart, setActiveChart] = useState<ChartTab>("temperature");
   const [mainTab, setMainTab] = useState<MainTab>("weather");
   const [location, setLocation] = useState<GeocodingResult>(DEFAULT_LOCATION);
   const [treeQuota, setTreeQuota] = useState<{ used: number; limit: number; remaining: number } | null>(null);
+  const [apiUsage, setApiUsage] = useState<{ requests: number; limit: number; plan: string } | null>(null);
 
   useEffect(() => {
     fetchWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon);
     fetch("/api/trees").then(r => r.ok ? r.json() : null).then(d => { if (d?.quota) setTreeQuota(d.quota); });
+    fetch("/api/usage").then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.remaining) setApiUsage({ requests: d.remaining.requests, limit: d.limits.requests, plan: d.plan });
+    });
   }, [fetchWeather]);
 
   useEffect(() => {
@@ -94,12 +100,30 @@ export default function DashboardPage() {
 
             <div style={{ width: "1px", height: "18px", background: "var(--border)" }} />
 
+            {/* Active crop chip */}
+            {selectedCrop && (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs shrink-0"
+                style={{
+                  background: "var(--accent-glow)",
+                  border: "1px solid var(--accent-dim)",
+                  borderRadius: "5px",
+                  color: "var(--accent)",
+                }}
+                title={selectedCrop.description}
+              >
+                <span>{selectedCrop.emoji}</span>
+                <span className="hidden sm:inline font-medium">{selectedCrop.name}</span>
+              </div>
+            )}
+
             {/* Location search */}
             <div className="flex-1 max-w-lg">
               <LocationSearch onSelect={handleLocationSelect} isLoading={isLoading} />
             </div>
 
             <div className="ml-auto flex items-center gap-3 shrink-0">
+              <ThemeToggle />
               <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
                 <span
                   className="w-1.5 h-1.5 rounded-full animate-pulse"
@@ -107,9 +131,21 @@ export default function DashboardPage() {
                 />
                 <span className="hidden sm:block">Live</span>
               </div>
-              <span className="text-xs hidden sm:block" style={{ color: "var(--text-dim)" }}>
-                Free tier
-              </span>
+              {apiUsage && (
+                <div className="hidden sm:flex items-center gap-2 text-xs" style={{ color: "var(--text-dim)" }}>
+                  <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg-raised)" }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.round((apiUsage.requests / apiUsage.limit) * 100)}%`,
+                        background: apiUsage.requests > apiUsage.limit * 0.3 ? "var(--risk-low)" : "var(--risk-high)",
+                      }}
+                    />
+                  </div>
+                  <span className="tabular-nums">{apiUsage.requests.toLocaleString()}/{apiUsage.limit.toLocaleString()}</span>
+                  <span className="capitalize" style={{ color: "var(--text-dim)" }}>{apiUsage.plan}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -152,6 +188,15 @@ export default function DashboardPage() {
             </div>
             <Skeleton height={112} />
           </div>
+        )}
+
+        {/* ── ACTION SUMMARY ──────────────────────────────────────────────── */}
+        {weather && (
+          <ActionSummary
+            weather={weather}
+            selectedCrop={selectedCrop}
+            risks={risks}
+          />
         )}
 
         {/* ── WEATHER TAB ─────────────────────────────────────────────────── */}
@@ -233,14 +278,14 @@ export default function DashboardPage() {
           <>
             <CropSelector selected={selectedCrop} onChange={setSelectedCrop} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <RecommendationsPanel recommendations={recommendations} cropName={selectedCrop?.name} />
+              <RecommendationsPanel recommendations={recommendations} cropName={selectedCrop?.name} loading={recsLoading} />
               {risks ? (
                 <RiskAnalysis risks={risks} />
               ) : (
-                <EmptyState
-                  icon="⚠"
-                  title="No crop selected"
-                  body="Select a crop above to view risk analysis for drought, flood, heat stress, frost, and disease."
+                  <EmptyState
+                    icon="🌱"
+                    title="Select your crop"
+                    body="Choose a crop to see personalized risk analysis and recommendations for your farm."
                 />
               )}
             </div>
@@ -248,7 +293,7 @@ export default function DashboardPage() {
         )}
 
         {mainTab === "crops" && !weather && !isLoading && (
-          <EmptyState icon="◎" title="No location set" body="Search for a location first to unlock crop intelligence." />
+          <EmptyState icon="📍" title="Set your farm location" body="Search for your farm above to unlock crop recommendations." />
         )}
 
         {/* ── TREES TAB ───────────────────────────────────────────────────── */}
@@ -268,7 +313,7 @@ export default function DashboardPage() {
         )}
 
         {mainTab === "reports" && !weather && !isLoading && (
-          <EmptyState icon="📄" title="No weather data" body="Search for a location first to generate reports." />
+          <EmptyState icon="📋" title="Load weather first" body="Search for your farm location above to generate a report." />
         )}
 
         {/* ── HISTORY TAB ─────────────────────────────────────────────────── */}
@@ -282,8 +327,8 @@ export default function DashboardPage() {
             <div className="text-5xl font-black tracking-tighter" style={{ color: "var(--accent)", opacity: 0.3 }}>
               —
             </div>
-            <p className="text-base font-semibold" style={{ color: "var(--text)" }}>Search a location to begin</p>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Enter a city, county, or region above</p>
+            <p className="text-base font-semibold" style={{ color: "var(--text)" }}>Set your farm location</p>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Search for a farm, county, or region to get started</p>
           </div>
         )}
       </main>

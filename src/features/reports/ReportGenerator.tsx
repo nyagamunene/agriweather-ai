@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { Download, Copy, Check } from "lucide-react";
 import type { WeatherResponse, GeocodingResult } from "@/types/weather";
 import type { CropProfile, AgriculturalRisk, FarmingRecommendation } from "@/types/crops";
 import type { ReportData } from "@/types/reports";
@@ -15,6 +16,7 @@ interface Props {
 
 export function ReportGenerator({ weather, location, selectedCrop, risks, recommendations }: Props) {
   const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const summary = useMemo(() => {
     const daily = weather.daily.slice(0, 7);
@@ -61,6 +63,27 @@ export function ReportGenerator({ weather, location, selectedCrop, risks, recomm
     });
   };
 
+  const handleCopySummary = () => {
+    const parts: string[] = [];
+    parts.push(`📍 ${location.name}`);
+    parts.push(`📅 ${new Date().toLocaleDateString("en-US", { dateStyle: "full" })}`);
+    parts.push(`🌡 Avg: ${summary.avgTemp.toFixed(1)}°C | Rain: ${summary.totalRainfall.toFixed(1)}mm`);
+    if (selectedCrop) parts.push(`🌱 Crop: ${selectedCrop.name}`);
+    if (risks) {
+      const worst = Object.entries(risks).filter(([_, r]) => r.level === "critical" || r.level === "high");
+      if (worst.length > 0) {
+        parts.push(`⚠ Risks: ${worst.map(([k]) => k.replace(/([A-Z])/g, " $1")).join(", ")}`);
+      }
+    }
+    if (recommendations.length > 0) {
+      parts.push(`💡 ${recommendations[0].title}: ${recommendations[0].detail}`);
+    }
+    navigator.clipboard.writeText(parts.join("\n")).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   const today = weather.daily[0];
 
   return (
@@ -82,30 +105,37 @@ export function ReportGenerator({ weather, location, selectedCrop, risks, recomm
               {new Date().toLocaleDateString("en-US", { dateStyle: "full" })}
             </p>
           </div>
-          <button
-            onClick={handleDownload}
-            disabled={generating}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold transition-colors"
-            style={{
-              background: generating ? "var(--bg-raised)" : "var(--accent)",
-              color: generating ? "var(--text-muted)" : "#0f0e0b",
-              borderRadius: "5px",
-              border: "none",
-              cursor: generating ? "not-allowed" : "pointer",
-              opacity: generating ? 0.6 : 1,
-            }}
-          >
-            {generating ? (
-              <>Generating...</>
-            ) : (
-              <>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M6 1v7M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Download PDF
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopySummary}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={{
+                background: copied ? "var(--risk-low-bg, rgba(74,140,92,0.1))" : "var(--bg-raised)",
+                color: copied ? "var(--risk-low)" : "var(--text-muted)",
+                borderRadius: "5px",
+                border: `1px solid ${copied ? "var(--risk-low-border, rgba(74,140,92,0.3))" : "var(--border-soft)"}`,
+                cursor: "pointer",
+              }}
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              <span className="hidden sm:inline">{copied ? "Copied" : "Copy summary"}</span>
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={generating}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold transition-colors"
+              style={{
+                background: generating ? "var(--bg-raised)" : "var(--accent)",
+                color: generating ? "var(--text-muted)" : "#0f0e0b",
+                borderRadius: "5px",
+                border: "none",
+                cursor: generating ? "not-allowed" : "pointer",
+                opacity: generating ? 0.6 : 1,
+              }}
+            >
+              {generating ? "Generating..." : <><Download size={12} /> Download PDF</>}
+            </button>
+          </div>
         </div>
 
         {/* Report sections preview */}

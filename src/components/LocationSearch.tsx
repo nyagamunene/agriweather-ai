@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { Search, Map } from "lucide-react";
 import type { GeocodingResult } from "@/types/weather";
 import { searchLocations } from "@/hooks/useWeather";
 import { MapPicker } from "@/components/MapPicker";
@@ -72,9 +73,7 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
           ) : (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search size={14} />
           )}
         </span>
         <input
@@ -114,7 +113,8 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
             (e.currentTarget as HTMLButtonElement).style.color = "var(--text-dim)";
           }}
         >
-          ⊕ Map
+          <Map size={12} />
+          <span className="hidden sm:inline">Map</span>
         </button>
       </div>
 

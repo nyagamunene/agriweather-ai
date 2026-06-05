@@ -7,6 +7,7 @@ interface UseWeatherReturn {
   weather: WeatherResponse | null;
   recommendations: FarmingRecommendation[];
   isLoading: boolean;
+  recsLoading: boolean;
   error: string | null;
   fetchWeather: (lat: number, lon: number) => Promise<void>;
   fetchRecommendations: (crop: CropProfile) => Promise<void>;
@@ -16,6 +17,7 @@ export function useWeather(): UseWeatherReturn {
   const [weather, setWeather] = useState<WeatherResponse | null>(null);
   const [recommendations, setRecommendations] = useState<FarmingRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [recsLoading, setRecsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const weatherRef = useRef<WeatherResponse | null>(null);
 
@@ -57,6 +59,8 @@ export function useWeather(): UseWeatherReturn {
   const fetchRecommendations = useCallback(async (crop: CropProfile) => {
     const w = weatherRef.current;
     if (!w) return;
+    setRecsLoading(true);
+    setRecommendations([]);
     try {
       const res = await fetch("/api/recommendations", {
         method: "POST",
@@ -68,10 +72,12 @@ export function useWeather(): UseWeatherReturn {
       setRecommendations(recs ?? []);
     } catch {
       // non-blocking
+    } finally {
+      setRecsLoading(false);
     }
   }, []);
 
-  return { weather, recommendations, isLoading, error, fetchWeather, fetchRecommendations };
+  return { weather, recommendations, isLoading, recsLoading, error, fetchWeather, fetchRecommendations };
 }
 
 export async function searchLocations(query: string): Promise<GeocodingResult[]> {

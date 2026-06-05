@@ -73,7 +73,7 @@ export function TreeAnalysis({ quota }: Props) {
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-dim)" }}>
-          Tree &amp; Canopy Analysis
+          Plot Health Analysis
         </span>
         {quota && (
           <div className="flex items-center gap-2.5 text-xs" style={{ color: "var(--text-dim)" }}>

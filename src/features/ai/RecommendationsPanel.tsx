@@ -1,9 +1,12 @@
 "use client";
+import { Loader2 } from "lucide-react";
 import type { FarmingRecommendation } from "@/types/crops";
 
 interface Props {
   recommendations: FarmingRecommendation[];
   cropName?: string;
+  loading?: boolean;
+  error?: boolean;
 }
 
 const priorityMeta = {
@@ -13,7 +16,7 @@ const priorityMeta = {
   low:    { color: "var(--risk-low)",  bg: "rgba(74,140,92,0.1)", border: "rgba(74,140,92,0.3)", code: "LO" },
 };
 
-export function RecommendationsPanel({ recommendations, cropName }: Props) {
+export function RecommendationsPanel({ recommendations, cropName, loading, error }: Props) {
   return (
     <div
       style={{ border: "1px solid var(--border)", background: "var(--bg-surface)", borderRadius: "8px" }}
@@ -28,11 +31,23 @@ export function RecommendationsPanel({ recommendations, cropName }: Props) {
         )}
       </div>
 
-      {recommendations.length === 0 ? (
+      {!cropName ? (
         <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
           <span className="text-3xl font-mono" style={{ color: "var(--text-dim)" }}>◌</span>
           <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Select a crop to get recommendations</p>
           <p className="text-xs" style={{ color: "var(--text-dim)" }}>Irrigation, fertilizer, planting and pest management advice</p>
+        </div>
+      ) : loading ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+          <Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
+          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Generating recommendations...</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>Analyzing weather patterns for {cropName}</p>
+        </div>
+      ) : error || recommendations.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
+          <span className="text-3xl font-mono" style={{ color: "var(--text-dim)" }}>⚠</span>
+          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>No recommendations available</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>Unable to generate advice for {cropName}. Check that GEMINI_API_KEY is configured or try another crop.</p>
         </div>
       ) : (
         <div className="space-y-2.5">

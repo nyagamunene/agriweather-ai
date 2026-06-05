@@ -6,6 +6,18 @@ interface Props {
   daily: WeatherDay[];
 }
 
+function getDayLabel(day: WeatherDay): { text: string; color: string } | null {
+  if (day.precipitation_sum > 15) return { text: "Heavy rain", color: "var(--rain)" };
+  if (day.precipitation_sum > 5) return { text: "Rain expected", color: "var(--rain)" };
+  if (day.wind_max > 25) return { text: "Wind risk", color: "var(--risk-high)" };
+  if (day.temp_max > 34) return { text: "Heat stress", color: "var(--risk-crit)" };
+  if (day.temp_max > 30) return { text: "Heat watch", color: "var(--risk-high)" };
+  if (day.temp_min < 5) return { text: "Frost risk", color: "var(--risk-crit)" };
+  if (day.wind_max < 12 && day.precipitation_probability < 20) return { text: "Spray window", color: "var(--risk-low)" };
+  if (day.precipitation_probability > 60) return { text: "Rain likely", color: "var(--rain)" };
+  return null;
+}
+
 export function ForecastTimeline({ daily }: Props) {
   const days = daily.slice(0, 7);
   return (
@@ -20,10 +32,11 @@ export function ForecastTimeline({ daily }: Props) {
         {days.map((day, i) => {
           const label = i === 0 ? "Today" : new Date(day.date).toLocaleDateString("en-US", { weekday: "short" });
           const isToday = i === 0;
+          const dayLabel = getDayLabel(day);
           return (
             <div
               key={day.date}
-              className="flex flex-col items-center gap-1.5 py-3 px-1 transition-colors"
+              className="flex flex-col items-center gap-1 py-3 px-1 transition-colors"
               style={{
                 background: isToday ? "var(--bg-hover)" : "transparent",
                 borderRadius: "5px",
@@ -47,6 +60,11 @@ export function ForecastTimeline({ daily }: Props) {
               {day.precipitation_probability > 15 && (
                 <p className="text-xs font-medium tabular-nums" style={{ color: "var(--rain)" }}>
                   {day.precipitation_probability}%
+                </p>
+              )}
+              {dayLabel && (
+                <p className="text-xs font-semibold mt-auto pt-1 leading-tight text-center" style={{ color: dayLabel.color }}>
+                  {dayLabel.text}
                 </p>
               )}
             </div>

@@ -2,121 +2,55 @@ import { NextRequest, NextResponse } from "next/server";
 import type { WeatherDay, CurrentWeather } from "@/types/weather";
 import type { CropProfile, FarmingRecommendation } from "@/types/crops";
 
-function generateRecommendations(
-  current: CurrentWeather,
-  forecast: WeatherDay[],
-  crop: CropProfile
-): FarmingRecommendation[] {
-  const recs: FarmingRecommendation[] = [];
-  const next3 = forecast.slice(0, 3);
-  const totalRain = next3.reduce((s, d) => s + d.precipitation_sum, 0);
-  const avgTemp = next3.reduce((s, d) => s + (d.temp_max + d.temp_min) / 2, 0) / 3;
-  const rainDays = next3.filter(d => d.precipitation_sum > 2).length;
-  const highRainDays = next3.filter(d => d.precipitation_probability > 60).length;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function validateLLMResponse(parsed: any): FarmingRecommendation[] {
+  if (!Array.isArray(parsed) || parsed.length === 0) return [];
+  return parsed
+    .filter((rec: Record<string, unknown>) =>
+      typeof rec === "object" &&
+      typeof rec.title === "string" &&
+      typeof rec.detail === "string" &&
+      ["irrigation", "fertilizer", "planting", "harvesting", "pest", "general"].includes(rec.category as string) &&
+      ["urgent", "high", "medium", "low"].includes(rec.priority as string)
+    )
+    .map((rec: Record<string, string>) => ({
+      category: rec.category as FarmingRecommendation["category"],
+      priority: rec.priority as FarmingRecommendation["priority"],
+      title: rec.title,
+      detail: rec.detail,
+      icon: rec.icon ?? "🌿",
+    }))
+    .slice(0, 5);
+}
 
-  if (totalRain < 5 && crop.rainfallNeeds !== "low") {
-    recs.push({
-      category: "irrigation",
-      priority: totalRain === 0 ? "urgent" : "high",
-      title: "Irrigation Required",
-      detail: `Only ${totalRain.toFixed(1)}mm expected in the next 3 days. ${crop.name} requires consistent moisture. Schedule irrigation to maintain soil moisture levels.`,
-      icon: "💧",
-    });
-  } else if (totalRain > 30 && crop.rainfallNeeds === "low") {
-    recs.push({
-      category: "irrigation",
-      priority: "medium",
-      title: "Excess Moisture Risk",
-      detail: `${totalRain.toFixed(0)}mm expected over 3 days. ${crop.name} prefers drier conditions — ensure drainage channels are clear.`,
-      icon: "🌊",
-    });
-  }
+function buildPrompt(crop: CropProfile, current: CurrentWeather, forecast: WeatherDay[]): string {
+  const daily = forecast.slice(0, 7).map(d => {
+    const date = new Date(d.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    return `${date}: ${d.condition_code.replace(/_/g, " ")}, high ${Math.round(d.temp_max)}°C, low ${Math.round(d.temp_min)}°C, ${d.precipitation_sum.toFixed(1)}mm rain (${d.precipitation_probability}% chance), wind ${d.wind_max}km/h`;
+  }).join("\n");
 
-  if (highRainDays >= 2) {
-    recs.push({
-      category: "fertilizer",
-      priority: "high",
-      title: "Delay Fertilizer Application",
-      detail: "Heavy rainfall is forecast over the next 3 days. Delay fertilizer application to prevent nutrient runoff and protect waterways.",
-      icon: "⏸️",
-    });
-  } else if (rainDays === 0 && (current.humidity ?? 60) < 60) {
-    recs.push({
-      category: "fertilizer",
-      priority: "medium",
-      title: "Favorable Fertilizer Window",
-      detail: "Dry conditions ahead create an ideal window for fertilizer application. Apply before evening to minimize volatilization losses.",
-      icon: "✅",
-    });
-  }
+  return `You are an agricultural advisor for smallholder farmers in East Africa. Generate 3-5 specific, actionable farming recommendations for the following crop and weather conditions.
 
-  if (avgTemp > crop.idealTemperature[1] + 3) {
-    recs.push({
-      category: "general",
-      priority: "urgent",
-      title: "Heat Stress Alert",
-      detail: `Average temperatures of ${avgTemp.toFixed(1)}°C exceed ${crop.name}'s ideal range (${crop.idealTemperature[0]}–${crop.idealTemperature[1]}°C). Consider shade netting and increase irrigation frequency.`,
-      icon: "🌡️",
-    });
-  }
+Crop: ${crop.name} (${crop.emoji})
+Category: ${crop.category}
+Ideal temperature: ${crop.idealTemperature[0]}–${crop.idealTemperature[1]}°C
+Rainfall needs: ${crop.rainfallNeeds}
+Growing seasons: ${crop.growingSeasons.join(", ")}
+Sensitivities: ${crop.sensitivity.join(", ")}
 
-  const coldNight = next3.find(d => d.temp_min < 4);
-  if (coldNight) {
-    recs.push({
-      category: "general",
-      priority: "urgent",
-      title: "Frost Risk Warning",
-      detail: `Temperatures may drop to ${coldNight.temp_min.toFixed(1)}°C on ${coldNight.date}. Protect ${crop.name} plants with frost covers or smudge pots.`,
-      icon: "🧊",
-    });
-  }
+Current weather: ${Math.round(current.temperature)}°C, feels like ${Math.round(current.feels_like ?? current.temperature)}°C, humidity ${current.humidity ?? "N/A"}%, wind ${current.wind_speed}km/h
 
-  if (rainDays >= 2 && avgTemp > 15 && avgTemp < 28 && crop.sensitivity.some(s => s.includes("blight") || s.includes("disease") || s.includes("rust"))) {
-    const disease = crop.sensitivity.find(s => s.includes("blight") || s.includes("disease") || s.includes("rust")) ?? "fungal disease";
-    recs.push({
-      category: "pest",
-      priority: "high",
-      title: "Disease Risk Elevated",
-      detail: `Wet, warm conditions are ideal for ${disease}. Inspect crops regularly and consider preventive fungicide application before rain.`,
-      icon: "🦠",
-    });
-  }
+7-day forecast:
+${daily}
 
-  if (avgTemp >= crop.idealTemperature[0] && avgTemp <= crop.idealTemperature[1] && totalRain > 5 && totalRain < 25) {
-    recs.push({
-      category: "planting",
-      priority: "medium",
-      title: "Good Planting Conditions",
-      detail: `Temperature and moisture are within the ideal range for ${crop.name}. This is a favorable planting window if within your growing season.`,
-      icon: "🌱",
-    });
-  }
+Return ONLY a JSON array of recommendations (no markdown, no explanation). Each recommendation must have:
+- category: one of "irrigation", "fertilizer", "planting", "harvesting", "pest", "general"
+- priority: one of "urgent", "high", "medium", "low"
+- title: short action title (5-8 words max)
+- detail: 1-2 sentence explanation with specific weather numbers
+- icon: single emoji relevant to the recommendation
 
-  const windyDay = next3.find(d => d.wind_max > 40);
-  if (windyDay) {
-    recs.push({
-      category: "general",
-      priority: "high",
-      title: "High Wind Advisory",
-      detail: `Wind speeds up to ${windyDay.wind_max}km/h forecast. Secure farm structures, delay spraying, and check staking on tall crops.`,
-      icon: "💨",
-    });
-  }
-
-  if (recs.length === 0) {
-    recs.push({
-      category: "general",
-      priority: "low",
-      title: "Conditions Favorable",
-      detail: `Weather conditions are suitable for ${crop.name} cultivation. Continue standard agronomic practices and monitor daily forecasts.`,
-      icon: "🌿",
-    });
-  }
-
-  return recs.sort((a, b) => {
-    const order = { urgent: 0, high: 1, medium: 2, low: 3 };
-    return order[a.priority] - order[b.priority];
-  });
+Prioritize actions that would help a farmer TODAY. Reference actual temperatures, rain amounts, and wind speeds from the forecast.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -126,9 +60,43 @@ export async function POST(req: NextRequest) {
     if (!current || !forecast || !crop) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
-    const recommendations = generateRecommendations(current, forecast, crop);
-    return NextResponse.json({ recommendations });
-  } catch {
-    return NextResponse.json({ error: "Failed to generate recommendations" }, { status: 500 });
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
+    }
+
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    const prompt = buildPrompt(crop, current, forecast);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const result = await model.generateContent(prompt, { signal: controller.signal });
+      const text = result.response.text();
+
+      let parsed: unknown;
+      try {
+        const match = text.match(/\[[\s\S]*\]/);
+        parsed = JSON.parse(match ? match[0] : text.replace(/```json\s*|\s*```/g, "").trim());
+      } catch {
+        return NextResponse.json({ error: "Gemini returned non-JSON response" }, { status: 500 });
+      }
+
+      const recommendations = validateLLMResponse(parsed);
+
+      if (recommendations.length === 0) {
+        return NextResponse.json({ error: "Failed to parse Gemini recommendations" }, { status: 500 });
+      }
+
+      return NextResponse.json({ recommendations });
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to generate recommendations" }, { status: 500 });
   }
 }
