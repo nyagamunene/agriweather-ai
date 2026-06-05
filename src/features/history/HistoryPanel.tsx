@@ -57,25 +57,35 @@ function relativeTime(iso: string): string {
 export function HistoryPanel({ onLocationSelect }: Props) {
   const [data, setData] = useState<HistoryData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedTree, setExpandedTree] = useState<string | null>(null);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 6000);
     try {
-      const res = await fetch("/api/history");
+      const res = await fetch("/api/history", { signal: controller.signal });
       if (res.ok) {
         const json = await res.json();
         setData(json);
+      } else {
+        setError("History is temporarily unavailable");
       }
     } catch {
-      // silent
+      setError("History is taking too long to load");
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchHistory();
+    const timeout = window.setTimeout(() => {
+      void fetchHistory();
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [fetchHistory]);
 
   return (
@@ -92,6 +102,11 @@ export function HistoryPanel({ onLocationSelect }: Props) {
         {loading ? (
           <div className="py-8 flex justify-center">
             <span className="text-xs" style={{ color: "var(--text-dim)" }}>Loading...</span>
+          </div>
+        ) : error ? (
+          <div className="py-8 flex flex-col items-center gap-2">
+            <span className="text-2xl font-mono" style={{ color: "var(--text-dim)" }}>!</span>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{error}</p>
           </div>
         ) : !data || data.locations.length === 0 ? (
           <div className="py-8 flex flex-col items-center gap-2">
@@ -150,6 +165,11 @@ export function HistoryPanel({ onLocationSelect }: Props) {
         {loading ? (
           <div className="py-8 flex justify-center">
             <span className="text-xs" style={{ color: "var(--text-dim)" }}>Loading...</span>
+          </div>
+        ) : error ? (
+          <div className="py-8 flex flex-col items-center gap-2">
+            <span className="text-2xl font-mono" style={{ color: "var(--text-dim)" }}>!</span>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{error}</p>
           </div>
         ) : !data || data.treeAnalyses.length === 0 ? (
           <div className="py-8 flex flex-col items-center gap-2">

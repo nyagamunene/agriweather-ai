@@ -40,9 +40,9 @@ dev.setup: ## First-time setup: copy env, start containers, install deps, run mi
 		echo "  .env.local already exists, skipping"; \
 	fi
 	@echo "→ Starting containers..."
-	docker compose -f $(COMPOSE_FILE) up -d --wait --build
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local up -d --wait --build
 	@echo "→ Installing Node.js dependencies..."
-	docker compose -f $(COMPOSE_FILE) exec app npm install
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec app npm install
 	@echo "→ Running database migrations..."
 	$(MAKE) db.migrate
 	@echo ""
@@ -50,9 +50,9 @@ dev.setup: ## First-time setup: copy env, start containers, install deps, run mi
 
 dev.start: ## Start the app (hot-reload via Next.js dev server)
 	@echo "→ Starting containers..."
-	docker compose -f $(COMPOSE_FILE) up -d --wait
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local up -d --wait
 	@echo "→ Starting Next.js dev server..."
-	docker compose -f $(COMPOSE_FILE) exec -d app npm run dev
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec -d app npm run dev
 	@echo "→ Waiting for app to be healthy..."
 	@scripts/wait-for-app
 	@echo ""
@@ -65,50 +65,50 @@ dev.restart: ## Restart containers
 	docker compose -f $(COMPOSE_FILE) restart
 
 dev.logs: ## Stream all container logs
-	docker compose -f $(COMPOSE_FILE) logs -f
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local logs -f
 
 dev.logs.app: ## Stream app container logs only
-	docker compose -f $(COMPOSE_FILE) logs -f app
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local logs -f app
 
 dev.logs.db: ## Stream database logs only
-	docker compose -f $(COMPOSE_FILE) logs -f postgres
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local logs -f postgres
 
 dev.console: ## Open a bash shell in the app container
-	docker compose -f $(COMPOSE_FILE) exec app sh
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec app sh
 
 dev.build: ## Rebuild containers without cache
-	docker compose -f $(COMPOSE_FILE) build --no-cache
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local build --no-cache
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
 db.migrate: ## Run pending database migrations
 	@echo "→ Running migrations..."
-	docker compose -f $(COMPOSE_FILE) exec postgres \
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec postgres \
 		psql -U $(DB_USER) -d $(DB_NAME) -f /docker-entrypoint-initdb.d/init.sql -q \
 		|| true
 	@echo "✓ Migrations complete"
 
 db.create: ## Create the database (already done by docker-compose on first run)
-	docker compose -f $(COMPOSE_FILE) exec postgres \
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec postgres \
 		createdb -U $(DB_USER) $(DB_NAME) 2>/dev/null || echo "  Database already exists"
-	docker compose -f $(COMPOSE_FILE) exec postgres \
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec postgres \
 		psql -U $(DB_USER) -d $(DB_NAME) -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";' -q
 
 db.console: ## Connect to the database via psql
-	docker compose -f $(COMPOSE_FILE) exec postgres \
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec postgres \
 		psql -U $(DB_USER) -d $(DB_NAME)
 
 db.reset: ## ⚠ Drop and recreate the database (destructive)
 	@echo "⚠ This will destroy all data in $(DB_NAME). Press Ctrl+C to cancel."
 	@sleep 3
-	docker compose -f $(COMPOSE_FILE) exec postgres \
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec postgres \
 		psql -U $(DB_USER) -c "DROP DATABASE IF EXISTS $(DB_NAME);" -q
 	$(MAKE) db.create
 	$(MAKE) db.migrate
 	@echo "✓ Database reset complete"
 
 db.dump: ## Dump the database schema to db/structure.sql
-	docker compose -f $(COMPOSE_FILE) exec postgres \
+	docker compose -f $(COMPOSE_FILE) --env-file .env.local exec postgres \
 		pg_dump --schema-only --no-privileges --no-owner \
 		-U $(DB_USER) -d $(DB_NAME) > db/structure.sql
 	@echo "✓ Schema dumped to db/structure.sql"

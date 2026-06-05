@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
   const lat = parseFloat(searchParams.get("lat") ?? "");
   const lon = parseFloat(searchParams.get("lon") ?? "");
   const days = Math.min(parseInt(searchParams.get("days") ?? "7"), 7);
+  const requestedName = searchParams.get("name");
+  const requestedCountry = searchParams.get("country");
 
   if (isNaN(lat) || isNaN(lon)) {
     return NextResponse.json({ error: "lat and lon are required" }, { status: 400 });
@@ -34,9 +36,14 @@ export async function GET(req: NextRequest) {
 
       const data = await res.json();
 
-      // Persist location and weather cache (non-blocking, silent failures)
-      saveLocation(data.location?.city ?? `${lat},${lon}`, lat, lon, data.location?.country, data.location?.timezone);
-      saveWeatherCache(lat, lon, days, data);
+      await saveLocation(
+        requestedName ?? data.location?.city ?? `${lat},${lon}`,
+        lat,
+        lon,
+        requestedCountry ?? data.location?.country,
+        data.location?.timezone,
+      );
+      void saveWeatherCache(lat, lon, days, data);
 
       return NextResponse.json(data, {
         headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200" },

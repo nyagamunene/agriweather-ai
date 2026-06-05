@@ -35,7 +35,7 @@ export function TemperatureChart({ daily }: Props) {
   }));
 
   return (
-    <div className="h-56">
+    <div className="h-56 min-w-0" style={{ minHeight: 224 }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <defs>
@@ -70,7 +70,7 @@ export function RainfallChart({ daily }: Props) {
   }));
 
   return (
-    <div className="h-56">
+    <div className="h-56 min-w-0" style={{ minHeight: 224 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke="#1f1d19" vertical={false} />
@@ -95,7 +95,7 @@ export function HumidityChart({ daily }: Props) {
   }));
 
   return (
-    <div className="h-56">
+    <div className="h-56 min-w-0" style={{ minHeight: 224 }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <defs>

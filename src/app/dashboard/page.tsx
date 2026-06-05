@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useWeather } from "@/hooks/useWeather";
 import { LocationSearch } from "@/components/LocationSearch";
 import { CurrentWeatherCard } from "@/features/weather/CurrentWeatherCard";
@@ -13,12 +13,14 @@ import { RiskAnalysis } from "@/features/ai/RiskAnalysis";
 import { TreeAnalysis } from "@/features/trees/TreeAnalysis";
 import { ReportGenerator } from "@/features/reports/ReportGenerator";
 import { HistoryPanel } from "@/features/history/HistoryPanel";
+import { FarmProfiles } from "@/features/farms/FarmProfiles";
+import { SavedFarms } from "@/features/farms/SavedFarms";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ActionSummary } from "@/features/ai/ActionSummary";
 import { calculateRisks } from "@/features/crops/risk-calculator";
+import { CROPS } from "@/features/crops/data";
 import type { CropProfile, AgriculturalRisk, GrowthStage } from "@/types/crops";
 import type { GeocodingResult } from "@/types/weather";
-import { cn } from "@/lib/utils/cn";
 
 const DEFAULT_LOCATION: GeocodingResult = {
   name: "Nairobi, Nairobi County, Kenya",
@@ -49,7 +51,6 @@ export default function DashboardPage() {
   const { weather, recommendations, isLoading, recsLoading, recsError, error, fetchWeather, fetchRecommendations } = useWeather();
   const [selectedCrop, setSelectedCrop] = useState<CropProfile | null>(null);
   const [selectedGrowthStage, setSelectedGrowthStage] = useState<GrowthStage | null>(null);
-  const [risks, setRisks] = useState<AgriculturalRisk | null>(null);
   const [activeChart, setActiveChart] = useState<ChartTab>("temperature");
   const [mainTab, setMainTab] = useState<MainTab>("weather");
   const [location, setLocation] = useState<GeocodingResult>(DEFAULT_LOCATION);
@@ -64,16 +65,30 @@ export default function DashboardPage() {
     });
   }, [fetchWeather]);
 
+  const risks = useMemo<AgriculturalRisk | null>(() => {
+    if (!weather || !selectedCrop) return null;
+    return calculateRisks(weather.daily, selectedCrop);
+  }, [weather, selectedCrop]);
+
   useEffect(() => {
     if (weather && selectedCrop) {
-      setRisks(calculateRisks(weather.daily, selectedCrop));
       fetchRecommendations(selectedCrop, selectedGrowthStage);
     }
   }, [weather, selectedCrop, selectedGrowthStage, fetchRecommendations]);
 
   const handleLocationSelect = useCallback(async (loc: GeocodingResult) => {
     setLocation(loc);
-    await fetchWeather(loc.lat, loc.lon);
+    await fetchWeather(loc.lat, loc.lon, loc);
+  }, [fetchWeather]);
+
+  const handleFarmLoad = useCallback(async (loc: GeocodingResult, cropId: string | null) => {
+    setLocation(loc);
+    await fetchWeather(loc.lat, loc.lon, loc);
+    if (cropId) {
+      const crop = CROPS.find(c => c.id === cropId) ?? null;
+      setSelectedCrop(crop);
+    }
+    setMainTab("weather");
   }, [fetchWeather]);
 
   const today = weather?.daily?.[0];
@@ -123,6 +138,19 @@ export default function DashboardPage() {
             <div className="flex-1 max-w-lg">
               <LocationSearch onSelect={handleLocationSelect} isLoading={isLoading} />
             </div>
+
+            {/* Saved farms dropdown */}
+            <SavedFarms
+              locationName={location.name}
+              locationLat={location.lat}
+              locationLon={location.lon}
+              selectedCropId={selectedCrop?.id ?? null}
+              county={location.state}
+              onLoadFarm={(lat, lon, name, cropId) => {
+                const loc: GeocodingResult = { name, lat, lon, country: "Kenya", state: location.state };
+                handleFarmLoad(loc, cropId);
+              }}
+            />
 
             <div className="ml-auto flex items-center gap-3 shrink-0">
               <ThemeToggle />
@@ -324,7 +352,18 @@ export default function DashboardPage() {
 
         {/* ── HISTORY TAB ─────────────────────────────────────────────────── */}
         {mainTab === "history" && (
-          <HistoryPanel onLocationSelect={handleLocationSelect} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <FarmProfiles
+                currentLocation={location}
+                currentCrop={selectedCrop}
+                onLoad={handleFarmLoad}
+              />
+            </div>
+            <div>
+              <HistoryPanel onLocationSelect={handleLocationSelect} />
+            </div>
+          </div>
         )}
 
         {/* Empty weather state */}

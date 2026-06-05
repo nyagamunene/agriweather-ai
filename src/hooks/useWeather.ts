@@ -10,7 +10,7 @@ interface UseWeatherReturn {
   recsLoading: boolean;
   error: string | null;
   recsError: string | null;
-  fetchWeather: (lat: number, lon: number) => Promise<void>;
+  fetchWeather: (lat: number, lon: number, location?: GeocodingResult) => Promise<void>;
   fetchRecommendations: (crop: CropProfile, growthStage?: GrowthStage | null) => Promise<void>;
 }
 
@@ -23,11 +23,18 @@ export function useWeather(): UseWeatherReturn {
   const [recsError, setRecsError] = useState<string | null>(null);
   const weatherRef = useRef<WeatherResponse | null>(null);
 
-  const fetchWeather = useCallback(async (lat: number, lon: number) => {
+  const fetchWeather = useCallback(async (lat: number, lon: number, location?: GeocodingResult) => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}&days=7`);
+      const params = new URLSearchParams({
+        lat: String(lat),
+        lon: String(lon),
+        days: "7",
+      });
+      if (location?.name) params.set("name", location.name);
+      if (location?.country) params.set("country", location.country);
+      const res = await fetch(`/api/weather?${params.toString()}`);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? `Error ${res.status}`);

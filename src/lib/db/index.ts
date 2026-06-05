@@ -6,7 +6,11 @@ function getSql() {
   if (sql) return sql;
   const url = process.env.DATABASE_URL;
   if (!url) return null;
-  sql = postgres(url, { max: 5, idle_timeout: 10 });
+  sql = postgres(url, {
+    max: 5,
+    idle_timeout: 10,
+    connect_timeout: 3,
+  });
   return sql;
 }
 
@@ -14,13 +18,21 @@ export async function saveLocation(name: string, lat: number, lon: number, count
   try {
     const client = getSql();
     if (!client) return;
-    await client`
-      INSERT INTO locations (name, lat, lon, country, timezone)
-      VALUES (${name}, ${lat}, ${lon}, ${country ?? null}, ${timezone ?? null})
-      ON CONFLICT (lat, lon) DO UPDATE SET
-        name = EXCLUDED.name,
-        timezone = EXCLUDED.timezone
-    `;
+    try {
+      await client`
+        INSERT INTO locations (name, lat, lon, country, timezone)
+        VALUES (${name}, ${lat}, ${lon}, ${country ?? null}, ${timezone ?? null})
+      `;
+    } catch {
+      await client`
+        UPDATE locations
+        SET name = ${name},
+            country = ${country ?? null},
+            timezone = ${timezone ?? null},
+            created_at = NOW()
+        WHERE lat = ${lat}::numeric(9,6) AND lon = ${lon}::numeric(9,6)
+      `;
+    }
   } catch {
     // degrade gracefully when DB is unavailable
   }
@@ -31,9 +43,10 @@ export async function getRecentLocations(limit = 10) {
     const client = getSql();
     if (!client) return [];
     return await client`
-      SELECT DISTINCT ON (lat, lon) name, lat, lon, country, timezone, created_at
+      SELECT name, lat, lon, country, timezone, MAX(created_at) AS created_at
       FROM locations
-      ORDER BY lat, lon, created_at DESC
+      GROUP BY name, lat, lon, country, timezone
+      ORDER BY created_at DESC
       LIMIT ${limit}
     `;
   } catch {
@@ -180,5 +193,87 @@ export async function getWeatherCache(lat: number, lon: number, days: number): P
     return rows.length > 0 ? rows[0].payload : null;
   } catch {
     return null;
+  }
+}
+
+// ── Farm plots ───────────────────────────────────────────────────────────────
+
+export interface PlotRow {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  area_acres: number | null;
+  crop_id: string | null;
+  county: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export async function savePlot(data: {
+  name: string;
+  lat: number;
+  lon: number;
+  area_acres?: number | null;
+  crop_id?: string | null;
+  county?: string | null;
+  notes?: string | null;
+}): Promise<string | null> {
+  try {
+    const client = getSql();
+    if (!client) return null;
+    const rows = await client`
+      INSERT INTO plots (name, lat, lon, area_acres, crop_id, county, notes)
+      VALUES (
+        ${data.name}, ${data.lat}, ${data.lon},
+        ${data.area_acres ?? null}, ${data.crop_id ?? null},
+        ${data.county ?? null}, ${data.notes ?? null}
+      )
+      RETURNING id
+    `;
+    return rows[0]?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getPlots(): Promise<PlotRow[]> {
+  try {
+    const client = getSql();
+    if (!client) return [];
+    const rows = await client<{
+      id: string; name: string; lat: string; lon: string;
+      area_acres: string | null; crop_id: string | null;
+      county: string | null; notes: string | null; created_at: string;
+    }[]>`
+      SELECT id, name, lat, lon, area_acres, crop_id, county, notes, created_at
+      FROM plots
+      ORDER BY created_at DESC
+      LIMIT 50
+    `;
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      lat: Number(r.lat),
+      lon: Number(r.lon),
+      area_acres: r.area_acres !== null ? Number(r.area_acres) : null,
+      crop_id: r.crop_id ?? null,
+      county: r.county ?? null,
+      notes: r.notes ?? null,
+      created_at: new Date(r.created_at).toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function deletePlot(id: string): Promise<boolean> {
+  try {
+    const client = getSql();
+    if (!client) return false;
+    await client`DELETE FROM plots WHERE id = ${id}`;
+    return true;
+  } catch {
+    return false;
   }
 }

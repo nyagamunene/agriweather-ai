@@ -42,8 +42,13 @@ export default function RootLayout({
             __html: `try{var t=localStorage.getItem("theme")||"dark";document.documentElement.setAttribute("data-theme",t)}catch(e){}`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{new MutationObserver(function(e){e.forEach(function(m){if(m.type==="attributes"&&m.attributeName==="fdprocessedid")m.target.removeAttribute("fdprocessedid")})}).observe(document.documentElement,{attributes:!0,subtree:!0,attributeFilter:["fdprocessedid"]})}catch(e){}`,
+          }}
+        />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
