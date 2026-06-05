@@ -77,7 +77,7 @@ export default function DashboardPage() {
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       {/* Top bar */}
       <header style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }} className="sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8">
           <div className="flex items-center gap-5 h-12">
             {/* Wordmark */}
             <div className="flex items-center gap-2.5 shrink-0 select-none">
@@ -133,7 +133,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-4">
+      <main className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 space-y-4">
         {error && (
           <div
             className="flex items-center gap-3 px-4 py-3 text-sm"
