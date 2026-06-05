@@ -1,8 +1,7 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
 import type { WeatherResponse, GeocodingResult } from "@/types/weather";
-import type { FarmingRecommendation } from "@/types/crops";
-import type { CropProfile } from "@/types/crops";
+import type { FarmingRecommendation, CropProfile } from "@/types/crops";
 
 interface UseWeatherReturn {
   weather: WeatherResponse | null;
@@ -26,14 +25,14 @@ export function useWeather(): UseWeatherReturn {
     try {
       const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}&days=7`);
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "Failed to fetch weather");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Error ${res.status}`);
       }
       const data: WeatherResponse = await res.json();
       setWeather(data);
       weatherRef.current = data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Failed to fetch weather data");
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +49,7 @@ export function useWeather(): UseWeatherReturn {
       });
       if (!res.ok) return;
       const { recommendations: recs } = await res.json();
-      setRecommendations(recs);
+      setRecommendations(recs ?? []);
     } catch {
       // non-blocking
     }
@@ -61,8 +60,12 @@ export function useWeather(): UseWeatherReturn {
 
 export async function searchLocations(query: string): Promise<GeocodingResult[]> {
   if (query.length < 2) return [];
-  const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
-  if (!res.ok) return [];
-  const { locations } = await res.json();
-  return locations ?? [];
+  try {
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    const { locations } = await res.json();
+    return locations ?? [];
+  } catch {
+    return [];
+  }
 }

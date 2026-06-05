@@ -11,36 +11,29 @@ function toRiskLevel(score: number): RiskLevel {
 export function calculateRisks(forecast: WeatherDay[], crop: CropProfile): AgriculturalRisk {
   const days = forecast.slice(0, 7);
 
-  // Drought: low precip + high temp
-  const avgPrecip = days.reduce((s, d) => s + d.precipitation, 0) / days.length;
-  const avgTemp = days.reduce((s, d) => s + d.temp_avg, 0) / days.length;
+  const avgPrecip = days.reduce((s, d) => s + d.precipitation_sum, 0) / days.length;
+  const avgTemp = days.reduce((s, d) => s + (d.temp_max + d.temp_min) / 2, 0) / days.length;
+
   const droughtScore = Math.min(100,
     (crop.rainfallNeeds === "high" ? 1.4 : crop.rainfallNeeds === "moderate" ? 1.0 : 0.6) *
     Math.max(0, (3 - avgPrecip) * 15 + Math.max(0, avgTemp - crop.idealTemperature[1]) * 5)
   );
 
-  // Flood: excess precipitation
-  const maxDayPrecip = Math.max(...days.map((d) => d.precipitation));
-  const totalPrecip = days.reduce((s, d) => s + d.precipitation, 0);
-  const floodScore = Math.min(100,
-    maxDayPrecip * 4 + (totalPrecip > 50 ? (totalPrecip - 50) * 0.8 : 0)
-  );
+  const maxDayPrecip = Math.max(...days.map(d => d.precipitation_sum));
+  const totalPrecip = days.reduce((s, d) => s + d.precipitation_sum, 0);
+  const floodScore = Math.min(100, maxDayPrecip * 4 + (totalPrecip > 50 ? (totalPrecip - 50) * 0.8 : 0));
 
-  // Heat stress
-  const hotDays = days.filter((d) => d.temp_max > crop.idealTemperature[1] + 3).length;
+  const hotDays = days.filter(d => d.temp_max > crop.idealTemperature[1] + 3).length;
   const heatScore = Math.min(100, hotDays * 15 + Math.max(0, avgTemp - crop.idealTemperature[1]) * 8);
 
-  // Frost risk
-  const coldDays = days.filter((d) => d.temp_min < 4).length;
-  const frostScore = Math.min(100, coldDays * 20 + Math.max(0, 4 - Math.min(...days.map((d) => d.temp_min))) * 10);
+  const coldDays = days.filter(d => d.temp_min < 4).length;
+  const frostScore = Math.min(100, coldDays * 20 + Math.max(0, 4 - Math.min(...days.map(d => d.temp_min))) * 10);
 
-  // Disease: high humidity + moderate temp
-  const avgHumidity = days.reduce((s, d) => s + d.humidity, 0) / days.length;
-  const wetDays = days.filter((d) => d.precipitation > 1).length;
+  const wetDays = days.filter(d => d.precipitation_sum > 1).length;
   const diseaseScore = Math.min(100,
-    Math.max(0, avgHumidity - 70) * 1.5 +
     wetDays * 8 +
-    (avgTemp > 15 && avgTemp < 28 ? 10 : 0)
+    (avgTemp > 15 && avgTemp < 28 ? 15 : 0) +
+    (crop.sensitivity.some(s => s.includes("blight") || s.includes("disease") || s.includes("rust")) ? 10 : 0)
   );
 
   return {

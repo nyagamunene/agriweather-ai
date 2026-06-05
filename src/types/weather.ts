@@ -2,66 +2,59 @@ export interface WeatherDay {
   date: string;
   temp_max: number;
   temp_min: number;
-  temp_avg: number;
-  humidity: number;
-  precipitation: number;
+  precipitation_sum: number;
   precipitation_probability: number;
-  wind_speed: number;
-  wind_direction: number;
-  weather_code: number;
-  description: string;
-  uv_index: number;
-  feels_like_max: number;
-  feels_like_min: number;
+  wind_max: number;
+  condition_code: string;
+  icon: string;
+  icon_path: string;
+  sunrise: string;
+  sunset: string;
 }
 
 export interface HourlyData {
   time: string;
-  temp: number;
+  temperature: number;
+  feels_like: number;
   humidity: number;
-  precipitation: number;
   precipitation_probability: number;
   wind_speed: number;
-  weather_code: number;
+  wind_gust: number;
+  uv_index: number;
+  condition_code: string;
+  icon: string;
+  icon_path: string;
 }
 
 export interface CurrentWeather {
-  temp: number;
-  feels_like: number;
-  humidity: number;
+  time: string;
+  temperature: number;
   wind_speed: number;
   wind_direction: number;
-  precipitation: number;
-  weather_code: number;
-  description: string;
-  uv_index: number;
-  visibility: number;
-  pressure: number;
-  dew_point: number;
+  condition_code: string;
+  icon: string;
+  icon_path: string;
+  // enriched from nearest hourly
+  feels_like?: number;
+  humidity?: number;
+  uv_index?: number;
+  wind_gust?: number;
 }
 
 export interface WeatherLocation {
   lat: number;
   lon: number;
+  timezone?: string;
+  country?: string;
   city?: string;
   region?: string;
-  country?: string;
-  timezone?: string;
-}
-
-export interface AISummary {
-  summary: string;
-  recommendations?: string[];
-  risk_flags?: string[];
 }
 
 export interface WeatherResponse {
   location: WeatherLocation;
   current: CurrentWeather;
   daily: WeatherDay[];
-  hourly?: HourlyData[];
-  ai_summary?: AISummary | string;
-  units: string;
+  hourly: HourlyData[];
 }
 
 export interface GeocodingResult {
