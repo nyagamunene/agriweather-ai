@@ -40,6 +40,7 @@ services:
     environment:
       NODE_ENV: development
       WEATHER_AI_API_KEY: ${WEATHER_AI_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
       DATABASE_URL: postgresql://agriweather:${POSTGRES_PASSWORD}@postgres:5432/agriweather
       HOSTNAME: 0.0.0.0
       PORT: 3000
@@ -50,20 +51,6 @@ services:
       postgres:
         condition: service_healthy
 
-  # ── pgweb (DB browser UI) ────────────────────────────────────────────────────
-  pgweb:
-    image: sosedoff/pgweb:latest
-    container_name: agriweather_pgweb
-    restart: unless-stopped
-    ports:
-      - "${PGWEB_PORT}:8081"
-    environment:
-      PGWEB_DATABASE_URL: postgresql://agriweather:${POSTGRES_PASSWORD}@postgres:5432/agriweather?sslmode=disable
-    depends_on:
-      postgres:
-        condition: service_healthy
-    profiles:
-      - dev
 
 volumes:
   postgres_data:
