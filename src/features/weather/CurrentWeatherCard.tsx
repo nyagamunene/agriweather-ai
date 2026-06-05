@@ -8,58 +8,89 @@ interface Props {
 }
 
 export function CurrentWeatherCard({ current, location }: Props) {
-  const locationLabel = [location.city, location.region, location.country].filter(Boolean).join(", ");
+  const city = [location.city].filter(Boolean).join("");
+  const region = [location.region, location.country].filter(Boolean).join(", ");
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-slate-900/90 backdrop-blur border border-slate-700/50 p-6 relative">
-      {/* Background glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
-
-      <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-        {/* Left: main temp */}
+    <div
+      style={{
+        border: "1px solid var(--border)",
+        background: "var(--bg-surface)",
+        borderRadius: "8px",
+      }}
+      className="p-5"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-stretch gap-5">
+        {/* Left: temperature block */}
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest">Current Conditions</p>
+          <div className="flex items-center gap-2 mb-3">
+            <span
+              className="text-xs font-mono px-1.5 py-0.5"
+              style={{ background: "var(--bg-raised)", color: "var(--text-dim)", border: "1px solid var(--border-soft)", borderRadius: "3px" }}
+            >
+              LIVE
+            </span>
+            <p className="text-xs" style={{ color: "var(--text-dim)" }}>Current Conditions</p>
           </div>
-          {locationLabel && (
-            <h2 className="text-white text-lg font-semibold mt-1 mb-4">{locationLabel}</h2>
-          )}
+
           <div className="flex items-center gap-4">
-            <div className="text-7xl leading-none">{getWeatherIcon(current.condition_code)}</div>
+            <div className="text-5xl leading-none select-none">{getWeatherIcon(current.condition_code)}</div>
             <div>
-              <p className="text-6xl font-bold text-white tracking-tight">{formatTemp(current.temperature)}</p>
-              <p className="text-slate-300 text-base mt-1">{getWeatherDescription(current.condition_code)}</p>
+              <p
+                className="font-black tracking-tighter leading-none"
+                style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", color: "var(--text)" }}
+              >
+                {formatTemp(current.temperature)}
+              </p>
+              <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                {getWeatherDescription(current.condition_code)}
+              </p>
               {current.feels_like !== undefined && (
-                <p className="text-slate-500 text-sm mt-0.5">Feels like {formatTemp(current.feels_like)}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-dim)" }}>
+                  Feels {formatTemp(current.feels_like)}
+                </p>
               )}
             </div>
           </div>
+
+          {/* Location label */}
+          {city && (
+            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-soft)" }}>
+              <p className="text-base font-semibold leading-tight" style={{ color: "var(--text)" }}>{city}</p>
+              {region && <p className="text-xs mt-0.5" style={{ color: "var(--text-dim)" }}>{region}</p>}
+            </div>
+          )}
         </div>
 
-        {/* Right: metric grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <MetricCard icon="💧" label="Humidity" value={current.humidity !== undefined ? `${current.humidity}%` : "--"} />
-          <MetricCard icon="💨" label="Wind" value={`${current.wind_speed} km/h ${getWindDirection(current.wind_direction)}`} />
+        {/* Divider */}
+        <div style={{ width: "1px", background: "var(--border-soft)" }} className="hidden sm:block" />
+
+        {/* Right: metrics table */}
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-px" style={{ background: "var(--border-soft)", border: "1px solid var(--border-soft)", borderRadius: "6px", overflow: "hidden" }}>
+          <Metric label="Humidity" value={current.humidity !== undefined ? `${current.humidity}%` : "—"} />
+          <Metric label="Wind" value={`${current.wind_speed} km/h`} />
+          <Metric label="Direction" value={getWindDirection(current.wind_direction)} />
           {current.wind_gust !== undefined && (
-            <MetricCard icon="🌬️" label="Gusts" value={`${current.wind_gust} km/h`} />
+            <Metric label="Gusts" value={`${current.wind_gust} km/h`} />
           )}
           {current.uv_index !== undefined && (
-            <MetricCard icon="☀️" label="UV Index" value={`${current.uv_index.toFixed(1)} · ${getUVLabel(current.uv_index)}`} />
+            <Metric label="UV Index" value={`${current.uv_index.toFixed(1)} ${getUVLabel(current.uv_index)}`} />
           )}
-          <MetricCard icon="🧭" label="Direction" value={`${current.wind_direction}° ${getWindDirection(current.wind_direction)}`} />
-          <MetricCard icon="🕐" label="Updated" value={current.time ? new Date(current.time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "--"} />
+          <Metric
+            label="Updated"
+            value={current.time ? new Date(current.time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) : "—"}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function MetricCard({ icon, label, value }: { icon: string; label: string; value: string }) {
+function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-700/40 min-w-[110px]">
-      <p className="text-slate-500 text-xs mb-1">{icon} {label}</p>
-      <p className="text-slate-200 font-semibold text-sm leading-tight">{value}</p>
+    <div className="px-3 py-2.5" style={{ background: "var(--bg-raised)" }}>
+      <p className="text-xs mb-1" style={{ color: "var(--text-dim)" }}>{label}</p>
+      <p className="text-sm font-semibold tabular-nums" style={{ color: "var(--text)" }}>{value}</p>
     </div>
   );
 }

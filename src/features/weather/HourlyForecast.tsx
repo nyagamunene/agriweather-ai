@@ -7,7 +7,6 @@ interface Props {
 }
 
 export function HourlyForecast({ hourly }: Props) {
-  // Show next 24 hours from now
   const now = new Date();
   const upcoming = hourly
     .filter(h => new Date(h.time) >= now)
@@ -16,9 +15,14 @@ export function HourlyForecast({ hourly }: Props) {
   if (upcoming.length === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-slate-800/60 backdrop-blur border border-slate-700/50 p-5">
-      <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">24-Hour Forecast</p>
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+    <div
+      style={{ border: "1px solid var(--border)", background: "var(--bg-surface)", borderRadius: "8px" }}
+      className="p-4"
+    >
+      <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--text-dim)" }}>
+        24-Hour Forecast
+      </p>
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
         {upcoming.map((h, i) => {
           const time = new Date(h.time);
           const isNow = i === 0;
@@ -26,25 +30,33 @@ export function HourlyForecast({ hourly }: Props) {
           return (
             <div
               key={h.time}
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl border shrink-0 min-w-[64px] transition-colors ${
-                isNow
-                  ? "bg-cyan-900/30 border-cyan-700/50"
-                  : "bg-slate-800/40 border-slate-700/30"
-              }`}
+              className="flex flex-col items-center gap-1.5 py-2.5 px-2.5 shrink-0 transition-colors"
+              style={{
+                minWidth: "60px",
+                background: isNow ? "var(--accent-glow)" : "var(--bg-raised)",
+                border: `1px solid ${isNow ? "var(--accent-dim)" : "var(--border-soft)"}`,
+                borderRadius: "5px",
+              }}
             >
-              <p className={`text-xs font-semibold ${isNow ? "text-cyan-400" : "text-slate-500"}`}>{label}</p>
+              <p
+                className="text-xs font-semibold tabular-nums"
+                style={{ color: isNow ? "var(--accent)" : "var(--text-dim)" }}
+              >
+                {label}
+              </p>
               <img
                 src={h.icon}
                 alt={h.condition_code}
-                className="w-7 h-7 object-contain"
+                className="w-6 h-6 object-contain"
                 onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
-              <p className="text-white text-sm font-bold">{formatTemp(h.temperature)}</p>
+              <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text)" }}>
+                {formatTemp(h.temperature)}
+              </p>
               {h.precipitation_probability > 15 && (
-                <p className="text-cyan-400 text-xs">💧{h.precipitation_probability}%</p>
-              )}
-              {h.humidity !== undefined && (
-                <p className="text-slate-600 text-xs">{h.humidity}%</p>
+                <p className="text-xs font-medium" style={{ color: "var(--rain)" }}>
+                  {h.precipitation_probability}%
+                </p>
               )}
             </div>
           );

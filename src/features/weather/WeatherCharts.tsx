@@ -13,9 +13,18 @@ function dayLabel(dateStr: string, i: number) {
 }
 
 const tooltipStyle = {
-  contentStyle: { backgroundColor: "#0f172a", border: "1px solid #1e293b", borderRadius: "10px", color: "#e2e8f0", fontSize: 12 },
-  cursor: { stroke: "#334155", strokeWidth: 1 },
+  contentStyle: {
+    backgroundColor: "#1d1b17",
+    border: "1px solid #2a2520",
+    borderRadius: "5px",
+    color: "#f0ece3",
+    fontSize: 12,
+    padding: "8px 12px",
+  },
+  cursor: { stroke: "#2a2520", strokeWidth: 1 },
 };
+
+const tickStyle = { fill: "#4a4540", fontSize: 11 };
 
 export function TemperatureChart({ daily }: Props) {
   const data = daily.map((d, i) => ({
@@ -26,27 +35,27 @@ export function TemperatureChart({ daily }: Props) {
   }));
 
   return (
-    <div className="h-60">
+    <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <defs>
             <linearGradient id="gMax" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#f97316" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+              <stop offset="5%" stopColor="#c4623a" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#c4623a" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="gMin" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+              <stop offset="5%" stopColor="#4a7fb0" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#4a7fb0" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#64748b", fontSize: 11 }} unit="°" axisLine={false} tickLine={false} />
+          <CartesianGrid strokeDasharray="2 4" stroke="#1f1d19" vertical={false} />
+          <XAxis dataKey="date" tick={tickStyle} axisLine={false} tickLine={false} />
+          <YAxis tick={tickStyle} unit="°" axisLine={false} tickLine={false} />
           <Tooltip {...tooltipStyle} formatter={(v) => [`${v}°C`]} />
-          <Legend wrapperStyle={{ fontSize: 12, color: "#94a3b8", paddingTop: 8 }} />
-          <Area type="monotone" dataKey="Max" stroke="#f97316" strokeWidth={2.5} fill="url(#gMax)" dot={{ fill: "#f97316", r: 3 }} activeDot={{ r: 5 }} />
-          <Area type="monotone" dataKey="Avg" stroke="#10b981" strokeWidth={2} fill="none" strokeDasharray="4 3" dot={false} />
-          <Area type="monotone" dataKey="Min" stroke="#06b6d4" strokeWidth={2.5} fill="url(#gMin)" dot={{ fill: "#06b6d4", r: 3 }} activeDot={{ r: 5 }} />
+          <Legend wrapperStyle={{ fontSize: 11, color: "#8a8070", paddingTop: 8 }} />
+          <Area type="monotone" dataKey="Max" stroke="#c4623a" strokeWidth={2} fill="url(#gMax)" dot={{ fill: "#c4623a", r: 2.5 }} activeDot={{ r: 4 }} />
+          <Area type="monotone" dataKey="Avg" stroke="#d4a517" strokeWidth={1.5} fill="none" strokeDasharray="4 3" dot={false} />
+          <Area type="monotone" dataKey="Min" stroke="#4a7fb0" strokeWidth={2} fill="url(#gMin)" dot={{ fill: "#4a7fb0", r: 2.5 }} activeDot={{ r: 4 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -61,17 +70,17 @@ export function RainfallChart({ daily }: Props) {
   }));
 
   return (
-    <div className="h-60">
+    <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="mm" tick={{ fill: "#64748b", fontSize: 11 }} unit="mm" axisLine={false} tickLine={false} />
-          <YAxis yAxisId="pct" orientation="right" tick={{ fill: "#64748b", fontSize: 11 }} unit="%" axisLine={false} tickLine={false} domain={[0, 100]} />
+          <CartesianGrid strokeDasharray="2 4" stroke="#1f1d19" vertical={false} />
+          <XAxis dataKey="date" tick={tickStyle} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="mm" tick={tickStyle} unit="mm" axisLine={false} tickLine={false} />
+          <YAxis yAxisId="pct" orientation="right" tick={tickStyle} unit="%" axisLine={false} tickLine={false} domain={[0, 100]} />
           <Tooltip {...tooltipStyle} />
-          <Legend wrapperStyle={{ fontSize: 12, color: "#94a3b8", paddingTop: 8 }} />
-          <Bar yAxisId="mm" dataKey="Rainfall (mm)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-          <Bar yAxisId="pct" dataKey="Chance (%)" fill="#8b5cf6" radius={[4, 4, 0, 0]} opacity={0.75} />
+          <Legend wrapperStyle={{ fontSize: 11, color: "#8a8070", paddingTop: 8 }} />
+          <Bar yAxisId="mm" dataKey="Rainfall (mm)" fill="#4a7fb0" radius={[3, 3, 0, 0]} />
+          <Bar yAxisId="pct" dataKey="Chance (%)" fill="#2a4a6a" radius={[3, 3, 0, 0]} opacity={0.85} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -86,28 +95,28 @@ export function HumidityChart({ daily }: Props) {
   }));
 
   return (
-    <div className="h-60">
+    <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <defs>
             <linearGradient id="gWind" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
+              <stop offset="5%" stopColor="#d4a517" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#d4a517" stopOpacity={0} />
             </linearGradient>
-            <linearGradient id="gRain" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+            <linearGradient id="gRain2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#4a7fb0" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="#4a7fb0" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="wind" tick={{ fill: "#64748b", fontSize: 11 }} unit=" km/h" axisLine={false} tickLine={false} />
-          <YAxis yAxisId="rain" orientation="right" tick={{ fill: "#64748b", fontSize: 11 }} unit="%" axisLine={false} tickLine={false} domain={[0, 100]} />
+          <CartesianGrid strokeDasharray="2 4" stroke="#1f1d19" vertical={false} />
+          <XAxis dataKey="date" tick={tickStyle} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="wind" tick={tickStyle} unit=" km/h" axisLine={false} tickLine={false} />
+          <YAxis yAxisId="rain" orientation="right" tick={tickStyle} unit="%" axisLine={false} tickLine={false} domain={[0, 100]} />
           <Tooltip {...tooltipStyle} />
-          <Legend wrapperStyle={{ fontSize: 12, color: "#94a3b8", paddingTop: 8 }} />
-          <ReferenceLine yAxisId="wind" y={40} stroke="#ef4444" strokeDasharray="3 3" label={{ value: "High wind", fill: "#ef4444", fontSize: 10 }} />
-          <Area yAxisId="wind" type="monotone" dataKey="Wind (km/h)" stroke="#a78bfa" strokeWidth={2.5} fill="url(#gWind)" dot={{ fill: "#a78bfa", r: 3 }} activeDot={{ r: 5 }} />
-          <Area yAxisId="rain" type="monotone" dataKey="Rain Chance (%)" stroke="#06b6d4" strokeWidth={2.5} fill="url(#gRain)" dot={{ fill: "#06b6d4", r: 3 }} activeDot={{ r: 5 }} />
+          <Legend wrapperStyle={{ fontSize: 11, color: "#8a8070", paddingTop: 8 }} />
+          <ReferenceLine yAxisId="wind" y={40} stroke="#a83232" strokeDasharray="3 3" label={{ value: "High", fill: "#a83232", fontSize: 10 }} />
+          <Area yAxisId="wind" type="monotone" dataKey="Wind (km/h)" stroke="#d4a517" strokeWidth={2} fill="url(#gWind)" dot={{ fill: "#d4a517", r: 2.5 }} activeDot={{ r: 4 }} />
+          <Area yAxisId="rain" type="monotone" dataKey="Rain Chance (%)" stroke="#4a7fb0" strokeWidth={2} fill="url(#gRain2)" dot={{ fill: "#4a7fb0", r: 2.5 }} activeDot={{ r: 4 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

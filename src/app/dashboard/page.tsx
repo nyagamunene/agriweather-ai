@@ -26,16 +26,16 @@ const DEFAULT_LOCATION: GeocodingResult = {
 type ChartTab = "temperature" | "rainfall" | "wind";
 type MainTab = "weather" | "crops" | "trees";
 
-const CHART_TABS: { id: ChartTab; label: string; icon: string }[] = [
-  { id: "temperature", label: "Temperature", icon: "🌡️" },
-  { id: "rainfall", label: "Rainfall", icon: "🌧️" },
-  { id: "wind", label: "Wind & Rain", icon: "💨" },
+const CHART_TABS: { id: ChartTab; label: string }[] = [
+  { id: "temperature", label: "Temperature" },
+  { id: "rainfall", label: "Rainfall" },
+  { id: "wind", label: "Wind & Humidity" },
 ];
 
-const MAIN_TABS: { id: MainTab; label: string; icon: string }[] = [
-  { id: "weather", label: "Weather", icon: "🌤️" },
-  { id: "crops", label: "Crop Intelligence", icon: "🌾" },
-  { id: "trees", label: "Tree Analysis", icon: "🌳" },
+const MAIN_TABS: { id: MainTab; label: string; count?: string }[] = [
+  { id: "weather", label: "Weather" },
+  { id: "crops", label: "Crop Intelligence" },
+  { id: "trees", label: "Tree Analysis" },
 ];
 
 export default function DashboardPage() {
@@ -70,64 +70,87 @@ export default function DashboardPage() {
   const rainDays = weather?.daily?.filter(d => d.precipitation_sum > 1).length ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#060d1a]">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-40 border-b border-slate-800/60 bg-[#060d1a]/95 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <span className="text-lg">🌾</span>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      {/* Top bar */}
+      <header style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }} className="sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center gap-5 h-12">
+            {/* Wordmark */}
+            <div className="flex items-center gap-2.5 shrink-0 select-none">
+              <div
+                className="w-6 h-6 flex items-center justify-center text-sm font-black"
+                style={{ background: "var(--accent)", color: "#0f0e0b", borderRadius: "3px", letterSpacing: "-0.02em" }}
+              >
+                A
+              </div>
+              <span className="font-semibold text-sm tracking-tight" style={{ color: "var(--text)" }}>
+                AgriWeather<span style={{ color: "var(--accent)" }}>.</span>AI
+              </span>
             </div>
-            <div className="hidden sm:block">
-              <p className="text-white font-bold text-sm leading-tight">AgriWeather AI</p>
-              <p className="text-slate-500 text-xs">Weather intelligence for farming</p>
+
+            <div style={{ width: "1px", height: "18px", background: "var(--border)" }} />
+
+            {/* Location search */}
+            <div className="flex-1 max-w-lg">
+              <LocationSearch onSelect={handleLocationSelect} isLoading={isLoading} />
+            </div>
+
+            <div className="ml-auto flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ background: "var(--accent)" }}
+                />
+                <span className="hidden sm:block">Live</span>
+              </div>
+              <span className="text-xs hidden sm:block" style={{ color: "var(--text-dim)" }}>
+                Free tier
+              </span>
             </div>
           </div>
-          <div className="flex-1 flex justify-center">
-            <LocationSearch onSelect={handleLocationSelect} isLoading={isLoading} />
-          </div>
-          <div className="shrink-0 flex items-center gap-2 text-xs text-slate-500">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="hidden sm:block">Live</span>
+
+          {/* Navigation tabs */}
+          <div className="flex gap-0">
+            {MAIN_TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setMainTab(tab.id)}
+                className="relative px-4 py-2 text-xs font-medium transition-colors"
+                style={{
+                  color: mainTab === tab.id ? "var(--text)" : "var(--text-muted)",
+                  borderBottom: mainTab === tab.id ? "2px solid var(--accent)" : "2px solid transparent",
+                  marginBottom: "-1px",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
+      </header>
 
-        {/* Main tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-1 pb-3">
-          {MAIN_TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setMainTab(tab.id)}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                mainTab === tab.id
-                  ? "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
-              )}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-4">
         {error && (
-          <div className="rounded-xl bg-red-950/40 border border-red-700/40 p-4 flex items-center gap-3">
-            <span className="text-lg">⚠️</span>
-            <p className="text-red-300 text-sm">{error}</p>
+          <div
+            className="flex items-center gap-3 px-4 py-3 text-sm"
+            style={{ background: "rgba(168, 50, 50, 0.12)", border: "1px solid rgba(168, 50, 50, 0.4)", borderRadius: "6px", color: "#f87171" }}
+          >
+            <span className="font-mono text-xs">ERR</span>
+            {error}
           </div>
         )}
 
         {isLoading && !weather && (
-          <div className="space-y-5 animate-pulse">
-            <div className="h-44 bg-slate-800/60 rounded-2xl" />
-            <div className="grid grid-cols-4 gap-3">{[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-slate-800/60 rounded-xl" />)}</div>
-            <div className="h-28 bg-slate-800/60 rounded-2xl" />
+          <div className="space-y-4">
+            <Skeleton height={168} />
+            <div className="grid grid-cols-4 gap-3">
+              {[...Array(4)].map((_, i) => <Skeleton key={i} height={72} />)}
+            </div>
+            <Skeleton height={112} />
           </div>
         )}
 
-        {/* ── WEATHER TAB ─────────────────────────────────────────────── */}
+        {/* ── WEATHER TAB ─────────────────────────────────────────────────── */}
         {mainTab === "weather" && weather && (
           <>
             <CurrentWeatherCard
@@ -135,12 +158,33 @@ export default function DashboardPage() {
               location={{ ...weather.location, city: location.name.split(",")[0], region: location.state, country: location.country }}
             />
 
-            {/* Stats strip */}
+            {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard icon="🌡️" label="Today's Range" value={today ? `${Math.round(today.temp_min)}° – ${Math.round(today.temp_max)}°C` : "--"} sub="Min / Max" color="orange" />
-              <StatCard icon="🌧️" label="7-Day Rainfall" value={`${weeklyRain.toFixed(1)} mm`} sub={`${rainDays} rainy day${rainDays !== 1 ? "s" : ""}`} color="blue" />
-              <StatCard icon="💨" label="Peak Wind" value={`${maxWind} km/h`} sub="This week" color="purple" />
-              <StatCard icon="🌅" label="Sunrise / Set" value={today ? `${fmtTime(today.sunrise)} / ${fmtTime(today.sunset)}` : "--"} sub="Today" color="yellow" />
+              <StatTile
+                label="Today's Range"
+                value={today ? `${Math.round(today.temp_min)}° – ${Math.round(today.temp_max)}°` : "—"}
+                unit="°C"
+                meta="High / Low"
+              />
+              <StatTile
+                label="7-Day Rainfall"
+                value={`${weeklyRain.toFixed(1)}`}
+                unit="mm"
+                meta={`${rainDays} rainy day${rainDays !== 1 ? "s" : ""}`}
+                accent="rain"
+              />
+              <StatTile
+                label="Peak Wind"
+                value={`${maxWind}`}
+                unit="km/h"
+                meta="This week"
+              />
+              <StatTile
+                label="Sunrise / Set"
+                value={today ? `${fmtTime(today.sunrise)}` : "—"}
+                unit=""
+                meta={today ? `Set ${fmtTime(today.sunset)}` : ""}
+              />
             </div>
 
             {/* Hourly */}
@@ -150,14 +194,25 @@ export default function DashboardPage() {
             <ForecastTimeline daily={weather.daily} />
 
             {/* Charts */}
-            <div className="rounded-2xl bg-slate-800/60 backdrop-blur border border-slate-700/50 p-5">
-              <div className="flex items-center justify-between mb-5">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest">Weather Trends</p>
-                <div className="flex gap-1.5">
+            <div style={{ border: "1px solid var(--border)", background: "var(--bg-surface)", borderRadius: "8px" }} className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-dim)" }}>
+                  Weather Trends
+                </span>
+                <div className="flex gap-1">
                   {CHART_TABS.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveChart(tab.id)}
-                      className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-all", activeChart === tab.id ? "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50" : "text-slate-500 hover:text-slate-300 hover:bg-slate-700/40")}>
-                      {tab.icon} {tab.label}
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveChart(tab.id)}
+                      className="px-2.5 py-1 text-xs font-medium transition-colors"
+                      style={{
+                        color: activeChart === tab.id ? "var(--accent)" : "var(--text-muted)",
+                        background: activeChart === tab.id ? "var(--accent-glow)" : "transparent",
+                        border: `1px solid ${activeChart === tab.id ? "var(--accent-dim)" : "transparent"}`,
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {tab.label}
                     </button>
                   ))}
                 </div>
@@ -169,50 +224,60 @@ export default function DashboardPage() {
           </>
         )}
 
-        {/* ── CROPS TAB ───────────────────────────────────────────────── */}
+        {/* ── CROPS TAB ───────────────────────────────────────────────────── */}
         {mainTab === "crops" && weather && (
           <>
             <CropSelector selected={selectedCrop} onChange={setSelectedCrop} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <RecommendationsPanel recommendations={recommendations} cropName={selectedCrop?.name} />
               {risks ? (
                 <RiskAnalysis risks={risks} />
               ) : (
-                <div className="rounded-2xl bg-slate-800/60 backdrop-blur border border-slate-700/50 p-5 flex flex-col items-center justify-center min-h-[200px] gap-3">
-                  <span className="text-4xl">🌿</span>
-                  <p className="text-slate-400 text-sm font-medium">Select a crop above to view risk analysis</p>
-                  <p className="text-slate-600 text-xs text-center">Drought, flood, heat stress, frost and disease risks will appear here</p>
-                </div>
+                <EmptyState
+                  icon="⚠"
+                  title="No crop selected"
+                  body="Select a crop above to view risk analysis for drought, flood, heat stress, frost, and disease."
+                />
               )}
             </div>
           </>
         )}
 
         {mainTab === "crops" && !weather && !isLoading && (
-          <div className="text-center py-20 text-slate-500">
-            <p className="text-3xl mb-3">🌾</p>
-            <p className="text-sm">Search a location first to get crop recommendations</p>
-          </div>
+          <EmptyState icon="◎" title="No location set" body="Search for a location first to unlock crop intelligence." />
         )}
 
-        {/* ── TREES TAB ───────────────────────────────────────────────── */}
+        {/* ── TREES TAB ───────────────────────────────────────────────────── */}
         {mainTab === "trees" && (
           <TreeAnalysis quota={treeQuota ?? undefined} />
         )}
 
-        {/* Empty state */}
+        {/* Empty weather state */}
         {mainTab === "weather" && !weather && !isLoading && !error && (
-          <div className="text-center py-32">
-            <div className="text-6xl mb-4">🌾</div>
-            <p className="text-slate-300 text-xl font-semibold">Search a location to get started</p>
-            <p className="text-slate-500 text-sm mt-2">Enter a city or region above to view live weather intelligence</p>
+          <div className="py-32 flex flex-col items-center gap-3 text-center">
+            <div className="text-5xl font-black tracking-tighter" style={{ color: "var(--accent)", opacity: 0.3 }}>
+              —
+            </div>
+            <p className="text-base font-semibold" style={{ color: "var(--text)" }}>Search a location to begin</p>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Enter a city, county, or region above</p>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-slate-800/40 mt-10 py-5 text-center text-slate-600 text-xs">
+      <footer
+        className="mt-12 py-4 text-center text-xs"
+        style={{ borderTop: "1px solid var(--border-soft)", color: "var(--text-dim)" }}
+      >
         AgriWeather AI · Powered by{" "}
-        <a href="https://weather-ai.co" className="text-emerald-700 hover:text-emerald-500 transition-colors" target="_blank" rel="noopener noreferrer">WeatherAI</a>
+        <a
+          href="https://weather-ai.co"
+          style={{ color: "var(--text-muted)" }}
+          className="hover:underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          WeatherAI
+        </a>
         {" "}· Weather intelligence for smarter farming
       </footer>
     </div>
@@ -223,13 +288,42 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string; sub: string; color: "orange" | "blue" | "purple" | "yellow" }) {
-  const colors = { orange: "from-orange-500/10 to-orange-500/5 border-orange-700/30", blue: "from-blue-500/10 to-blue-500/5 border-blue-700/30", purple: "from-purple-500/10 to-purple-500/5 border-purple-700/30", yellow: "from-yellow-500/10 to-yellow-500/5 border-yellow-700/30" };
+function Skeleton({ height }: { height: number }) {
   return (
-    <div className={`rounded-xl bg-gradient-to-br ${colors[color]} border p-4`}>
-      <div className="flex items-center gap-2 mb-2"><span className="text-base">{icon}</span><p className="text-slate-500 text-xs font-medium">{label}</p></div>
-      <p className="text-white font-bold text-lg leading-tight">{value}</p>
-      <p className="text-slate-600 text-xs mt-0.5">{sub}</p>
+    <div
+      className="animate-pulse rounded"
+      style={{ height, background: "var(--bg-raised)", border: "1px solid var(--border-soft)" }}
+    />
+  );
+}
+
+function StatTile({ label, value, unit, meta, accent }: {
+  label: string; value: string; unit: string; meta: string; accent?: "rain";
+}) {
+  const valColor = accent === "rain" ? "var(--rain)" : "var(--text)";
+  return (
+    <div
+      style={{ border: "1px solid var(--border)", background: "var(--bg-surface)", borderRadius: "6px" }}
+      className="px-4 py-3"
+    >
+      <p className="text-xs mb-2 font-medium" style={{ color: "var(--text-dim)" }}>{label}</p>
+      <p className="text-xl font-bold tabular-nums leading-none" style={{ color: valColor }}>
+        {value}<span className="text-sm font-normal ml-0.5" style={{ color: "var(--text-muted)" }}>{unit}</span>
+      </p>
+      <p className="text-xs mt-1.5" style={{ color: "var(--text-dim)" }}>{meta}</p>
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, body }: { icon: string; title: string; body: string }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center py-14 gap-2 text-center"
+      style={{ border: "1px solid var(--border-soft)", background: "var(--bg-surface)", borderRadius: "8px" }}
+    >
+      <span className="text-2xl font-mono mb-1" style={{ color: "var(--text-dim)" }}>{icon}</span>
+      <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>{title}</p>
+      <p className="text-xs max-w-64" style={{ color: "var(--text-dim)" }}>{body}</p>
     </div>
   );
 }

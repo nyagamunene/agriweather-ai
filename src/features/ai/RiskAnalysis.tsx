@@ -5,53 +5,80 @@ interface Props {
   risks: AgriculturalRisk;
 }
 
-const riskColors = {
-  low: { bar: "bg-emerald-500", text: "text-emerald-400", badge: "bg-emerald-950/60 text-emerald-300 border-emerald-700/40" },
-  moderate: { bar: "bg-yellow-500", text: "text-yellow-400", badge: "bg-yellow-950/60 text-yellow-300 border-yellow-700/40" },
-  high: { bar: "bg-orange-500", text: "text-orange-400", badge: "bg-orange-950/60 text-orange-300 border-orange-700/40" },
-  critical: { bar: "bg-red-500", text: "text-red-400", badge: "bg-red-950/60 text-red-300 border-red-700/40" },
+const riskBar = {
+  low: "var(--risk-low)",
+  moderate: "var(--risk-mod)",
+  high: "var(--risk-high)",
+  critical: "var(--risk-crit)",
 };
 
-const riskLabels: Record<keyof AgriculturalRisk, { label: string; icon: string }> = {
-  drought: { label: "Drought Risk", icon: "🏜️" },
-  flood: { label: "Flood Risk", icon: "🌊" },
-  heatStress: { label: "Heat Stress", icon: "🌡️" },
-  frostRisk: { label: "Frost Risk", icon: "🧊" },
-  diseaseRisk: { label: "Disease Risk", icon: "🦠" },
+const riskLabel = {
+  low: { bg: "rgba(74,140,92,0.15)", color: "var(--risk-low)", border: "rgba(74,140,92,0.3)" },
+  moderate: { bg: "rgba(184,134,11,0.15)", color: "var(--risk-mod)", border: "rgba(184,134,11,0.3)" },
+  high: { bg: "rgba(196,98,58,0.15)", color: "var(--risk-high)", border: "rgba(196,98,58,0.3)" },
+  critical: { bg: "rgba(168,50,50,0.15)", color: "var(--risk-crit)", border: "rgba(168,50,50,0.3)" },
+};
+
+const riskMeta: Record<keyof AgriculturalRisk, { label: string; code: string }> = {
+  drought: { label: "Drought", code: "DRT" },
+  flood: { label: "Flood", code: "FLD" },
+  heatStress: { label: "Heat Stress", code: "HT" },
+  frostRisk: { label: "Frost", code: "FRS" },
+  diseaseRisk: { label: "Disease", code: "DSE" },
 };
 
 export function RiskAnalysis({ risks }: Props) {
   return (
-    <div className="rounded-2xl bg-slate-800/60 backdrop-blur border border-slate-700/50 p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <span>⚠️</span>
-        <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Agricultural Risk Analysis</p>
+    <div
+      style={{ border: "1px solid var(--border)", background: "var(--bg-surface)", borderRadius: "8px" }}
+      className="p-4"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-dim)" }}>
+          Risk Analysis
+        </span>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="space-y-3.5">
         {(Object.keys(risks) as Array<keyof AgriculturalRisk>).map((key) => {
           const risk = risks[key];
-          const meta = riskLabels[key];
-          const colors = riskColors[risk.level];
+          const meta = riskMeta[key];
+          const colors = riskLabel[risk.level];
+          const barColor = riskBar[risk.level];
 
           return (
             <div key={key}>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">{meta.icon}</span>
-                  <span className="text-slate-300 text-sm">{meta.label}</span>
+                  <span
+                    className="text-xs font-mono px-1 py-0.5"
+                    style={{ background: "var(--bg-raised)", color: "var(--text-dim)", border: "1px solid var(--border-soft)", borderRadius: "2px", minWidth: "32px", textAlign: "center" }}
+                  >
+                    {meta.code}
+                  </span>
+                  <span className="text-sm" style={{ color: "var(--text)" }}>{meta.label}</span>
                 </div>
-                <span className={`text-xs rounded-full px-2 py-0.5 border font-medium ${colors.badge}`}>
+                <span
+                  className="text-xs font-semibold px-2 py-0.5"
+                  style={{
+                    background: colors.bg,
+                    color: colors.color,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: "3px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
                   {risk.label}
                 </span>
               </div>
-              <div className="h-2 bg-slate-700/60 rounded-full overflow-hidden">
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg-raised)" }}>
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ${colors.bar}`}
-                  style={{ width: `${risk.score}%` }}
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${risk.score}%`, background: barColor }}
                 />
               </div>
-              <p className="text-slate-600 text-xs mt-1">{risk.description}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>{risk.description}</p>
             </div>
           );
         })}
