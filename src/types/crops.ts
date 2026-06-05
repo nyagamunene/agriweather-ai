@@ -1,7 +1,10 @@
+export type CropCategory = "cereal" | "legume" | "vegetable" | "cash_crop" | "fruit" | "tuber" | "spice" | "tree_crop";
+
 export interface CropProfile {
   id: string;
   name: string;
   emoji: string;
+  category: CropCategory;
   idealTemperature: [number, number];
   rainfallNeeds: "low" | "moderate" | "high";
   humidityRange: [number, number];

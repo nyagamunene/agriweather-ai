@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "standalone",
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "cdn.weather-ai.co" },
+      { protocol: "https", hostname: "storage.googleapis.com" },
+    ],
+  },
 };
 
 export default nextConfig;
