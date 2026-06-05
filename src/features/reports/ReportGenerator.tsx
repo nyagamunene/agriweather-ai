@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { Download, Copy, Check } from "lucide-react";
 import type { WeatherResponse, GeocodingResult } from "@/types/weather";
-import type { CropProfile, AgriculturalRisk, FarmingRecommendation } from "@/types/crops";
+import type { CropProfile, AgriculturalRisk, FarmingRecommendation, GrowthStage } from "@/types/crops";
 import type { ReportData } from "@/types/reports";
 import { downloadReportPDF } from "@/lib/pdf/generateReport";
 
@@ -10,11 +10,12 @@ interface Props {
   weather: WeatherResponse;
   location: GeocodingResult;
   selectedCrop: CropProfile | null;
+  growthStage: GrowthStage | null;
   risks: AgriculturalRisk | null;
   recommendations: FarmingRecommendation[];
 }
 
-export function ReportGenerator({ weather, location, selectedCrop, risks, recommendations }: Props) {
+export function ReportGenerator({ weather, location, selectedCrop, growthStage, risks, recommendations }: Props) {
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -48,6 +49,7 @@ export function ReportGenerator({ weather, location, selectedCrop, risks, recomm
         hourly: weather.hourly.slice(0, 24),
       },
       crop: selectedCrop,
+      growthStage,
       risks,
       recommendations,
       summary,
@@ -68,7 +70,8 @@ export function ReportGenerator({ weather, location, selectedCrop, risks, recomm
     parts.push(`📍 ${location.name}`);
     parts.push(`📅 ${new Date().toLocaleDateString("en-US", { dateStyle: "full" })}`);
     parts.push(`🌡 Avg: ${summary.avgTemp.toFixed(1)}°C | Rain: ${summary.totalRainfall.toFixed(1)}mm`);
-    if (selectedCrop) parts.push(`🌱 Crop: ${selectedCrop.name}`);
+    if (selectedCrop) parts.push(`Crop: ${selectedCrop.name}`);
+    if (growthStage) parts.push(`Stage: ${growthStage}`);
     if (risks) {
       const worst = Object.entries(risks).filter(([_, r]) => r.level === "critical" || r.level === "high");
       if (worst.length > 0) {
@@ -199,6 +202,11 @@ export function ReportGenerator({ weather, location, selectedCrop, risks, recomm
                 <PreviewStat label="Season" value={selectedCrop.growingSeasons.join(", ")} />
                 <PreviewStat label="Sensitivity" value={selectedCrop.sensitivity.length > 0 ? selectedCrop.sensitivity.join(", ") : "None"} />
               </div>
+              {growthStage && (
+                <div className="mt-2 px-3 py-2" style={{ border: "1px solid var(--accent-dim)", background: "var(--accent-glow, rgba(176,136,15,0.08))", borderRadius: "4px" }}>
+                  <p className="text-xs font-medium capitalize" style={{ color: "var(--accent)" }}>Growth Stage: {growthStage}</p>
+                </div>
+              )}
             </SectionPreview>
           )}
 

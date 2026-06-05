@@ -7,6 +7,7 @@ import { ForecastTimeline } from "@/features/weather/ForecastTimeline";
 import { HourlyForecast } from "@/features/weather/HourlyForecast";
 import { TemperatureChart, RainfallChart, HumidityChart } from "@/features/weather/WeatherCharts";
 import { CropSelector } from "@/features/crops/CropSelector";
+import { GrowthStageSelector } from "@/features/crops/GrowthStageSelector";
 import { RecommendationsPanel } from "@/features/ai/RecommendationsPanel";
 import { RiskAnalysis } from "@/features/ai/RiskAnalysis";
 import { TreeAnalysis } from "@/features/trees/TreeAnalysis";
@@ -15,7 +16,7 @@ import { HistoryPanel } from "@/features/history/HistoryPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ActionSummary } from "@/features/ai/ActionSummary";
 import { calculateRisks } from "@/features/crops/risk-calculator";
-import type { CropProfile, AgriculturalRisk } from "@/types/crops";
+import type { CropProfile, AgriculturalRisk, GrowthStage } from "@/types/crops";
 import type { GeocodingResult } from "@/types/weather";
 import { cn } from "@/lib/utils/cn";
 
@@ -47,6 +48,7 @@ const MAIN_TABS: { id: MainTab; label: string; count?: string }[] = [
 export default function DashboardPage() {
   const { weather, recommendations, isLoading, recsLoading, recsError, error, fetchWeather, fetchRecommendations } = useWeather();
   const [selectedCrop, setSelectedCrop] = useState<CropProfile | null>(null);
+  const [selectedGrowthStage, setSelectedGrowthStage] = useState<GrowthStage | null>(null);
   const [risks, setRisks] = useState<AgriculturalRisk | null>(null);
   const [activeChart, setActiveChart] = useState<ChartTab>("temperature");
   const [mainTab, setMainTab] = useState<MainTab>("weather");
@@ -65,9 +67,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (weather && selectedCrop) {
       setRisks(calculateRisks(weather.daily, selectedCrop));
-      fetchRecommendations(selectedCrop);
+      fetchRecommendations(selectedCrop, selectedGrowthStage);
     }
-  }, [weather, selectedCrop, fetchRecommendations]);
+  }, [weather, selectedCrop, selectedGrowthStage, fetchRecommendations]);
 
   const handleLocationSelect = useCallback(async (loc: GeocodingResult) => {
     setLocation(loc);
@@ -277,6 +279,9 @@ export default function DashboardPage() {
         {mainTab === "crops" && weather && (
           <>
             <CropSelector selected={selectedCrop} onChange={setSelectedCrop} />
+            {selectedCrop && (
+              <GrowthStageSelector value={selectedGrowthStage} onChange={setSelectedGrowthStage} />
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <RecommendationsPanel recommendations={recommendations} cropName={selectedCrop?.name} loading={recsLoading} error={recsError} />
               {risks ? (
@@ -303,13 +308,14 @@ export default function DashboardPage() {
 
         {/* ── REPORTS TAB ─────────────────────────────────────────────────── */}
         {mainTab === "reports" && weather && (
-          <ReportGenerator
-            weather={weather}
-            location={location}
-            selectedCrop={selectedCrop}
-            risks={risks}
-            recommendations={recommendations}
-          />
+            <ReportGenerator
+              weather={weather}
+              location={location}
+              selectedCrop={selectedCrop}
+              growthStage={selectedGrowthStage}
+              risks={risks}
+              recommendations={recommendations}
+            />
         )}
 
         {mainTab === "reports" && !weather && !isLoading && (

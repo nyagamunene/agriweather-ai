@@ -1,5 +1,5 @@
 import type { WeatherResponse, WeatherDay, CurrentWeather, HourlyData } from "./weather";
-import type { CropProfile, AgriculturalRisk, FarmingRecommendation } from "./crops";
+import type { CropProfile, AgriculturalRisk, FarmingRecommendation, GrowthStage } from "./crops";
 
 export interface ReportData {
   generatedAt: string;
@@ -16,6 +16,7 @@ export interface ReportData {
     hourly: HourlyData[];
   };
   crop: CropProfile | null;
+  growthStage: GrowthStage | null;
   risks: AgriculturalRisk | null;
   recommendations: FarmingRecommendation[];
   summary: {

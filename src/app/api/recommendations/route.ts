@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { WeatherDay, CurrentWeather } from "@/types/weather";
-import type { CropProfile, FarmingRecommendation } from "@/types/crops";
+import type { CropProfile, FarmingRecommendation, GrowthStage } from "@/types/crops";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function validateLLMResponse(parsed: any): FarmingRecommendation[] {
@@ -24,7 +24,7 @@ function validateLLMResponse(parsed: any): FarmingRecommendation[] {
     .slice(0, 5);
 }
 
-function buildMessages(crop: CropProfile, current: CurrentWeather, forecast: WeatherDay[]) {
+function buildMessages(crop: CropProfile, current: CurrentWeather, forecast: WeatherDay[], growthStage?: GrowthStage | null) {
   const daily = forecast.slice(0, 7).map(d => {
     const date = new Date(d.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
     return `${date}: ${d.condition_code.replace(/_/g, " ")}, high ${Math.round(d.temp_max)}°C, low ${Math.round(d.temp_min)}°C, ${d.precipitation_sum.toFixed(1)}mm rain (${d.precipitation_probability}% chance), wind ${d.wind_max}km/h`;
@@ -32,13 +32,15 @@ function buildMessages(crop: CropProfile, current: CurrentWeather, forecast: Wea
 
   const system = `You are an agricultural advisor for smallholder farmers in East Africa. Generate 3-5 specific, actionable farming recommendations based on real weather data. Always output valid JSON.`;
 
+  const stageLine = growthStage ? `\nGrowth stage: ${growthStage} — tailor advice to this specific phase.` : "";
+
   const user = `Crop: ${crop.name} (${crop.emoji})
 Category: ${crop.category}
 Ideal temperature: ${crop.idealTemperature[0]}–${crop.idealTemperature[1]}°C
 Rainfall needs: ${crop.rainfallNeeds}
 Growing seasons: ${crop.growingSeasons.join(", ")}
 Sensitivities: ${crop.sensitivity.join(", ")}
-
+${stageLine}
 Current weather: ${Math.round(current.temperature)}°C, feels like ${Math.round(current.feels_like ?? current.temperature)}°C, humidity ${current.humidity ?? "N/A"}%, wind ${current.wind_speed}km/h
 
 7-day forecast:
@@ -59,7 +61,7 @@ Prioritize actions that help a farmer TODAY. Reference actual forecast values.`;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { current, forecast, crop } = body as { current: CurrentWeather; forecast: WeatherDay[]; crop: CropProfile };
+    const { current, forecast, crop, growthStage } = body as { current: CurrentWeather; forecast: WeatherDay[]; crop: CropProfile; growthStage?: GrowthStage | null };
     if (!current || !forecast?.length || !crop) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "DEEPSEEK_API_KEY not configured" }, { status: 500 });
     }
 
-    const { system, user } = buildMessages(crop, current, forecast);
+    const { system, user } = buildMessages(crop, current, forecast, growthStage);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);

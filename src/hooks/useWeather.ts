@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
 import type { WeatherResponse, GeocodingResult } from "@/types/weather";
-import type { FarmingRecommendation, CropProfile } from "@/types/crops";
+import type { FarmingRecommendation, CropProfile, GrowthStage } from "@/types/crops";
 
 interface UseWeatherReturn {
   weather: WeatherResponse | null;
@@ -11,7 +11,7 @@ interface UseWeatherReturn {
   error: string | null;
   recsError: string | null;
   fetchWeather: (lat: number, lon: number) => Promise<void>;
-  fetchRecommendations: (crop: CropProfile) => Promise<void>;
+  fetchRecommendations: (crop: CropProfile, growthStage?: GrowthStage | null) => Promise<void>;
 }
 
 export function useWeather(): UseWeatherReturn {
@@ -58,7 +58,7 @@ export function useWeather(): UseWeatherReturn {
     }
   }, []);
 
-  const fetchRecommendations = useCallback(async (crop: CropProfile) => {
+  const fetchRecommendations = useCallback(async (crop: CropProfile, growthStage?: GrowthStage | null) => {
     const w = weatherRef.current;
     if (!w) return;
     setRecsLoading(true);
@@ -68,7 +68,7 @@ export function useWeather(): UseWeatherReturn {
       const res = await fetch("/api/recommendations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ current: w.current, forecast: w.daily, crop }),
+        body: JSON.stringify({ current: w.current, forecast: w.daily, crop, growthStage }),
       });
       const data = await res.json();
       if (!res.ok) {

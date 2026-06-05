@@ -192,6 +192,9 @@ export function generateReportPDF(data: ReportData): jsPDF {
     if (data.crop.sensitivity.length > 0) {
       y = drawInfoRow(doc, "Sensitivity", data.crop.sensitivity.join(", "), y, col1, col2);
     }
+    if (data.growthStage) {
+      y = drawInfoRow(doc, "Growth Stage", data.growthStage.charAt(0).toUpperCase() + data.growthStage.slice(1), y, col1, col2);
+    }
     y += 4;
 
     y = sectionTitle(doc, "Risk Analysis", y);
