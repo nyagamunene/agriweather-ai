@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Search, Map } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
 import type { GeocodingResult } from "@/types/weather";
 import { searchLocations } from "@/hooks/useWeather";
 import { MapPicker } from "@/components/MapPicker";
@@ -81,7 +81,7 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search location..."
-          className="w-full pl-9 pr-14 py-1.5 text-sm"
+          className="w-full pl-9 pr-10 py-1.5 text-sm"
           style={{
             background: "var(--bg-raised)",
             border: "1px solid var(--border)",
@@ -98,7 +98,7 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
         />
         <button
           onClick={() => setMapOpen(true)}
-          className="absolute right-1 top-1/2 -translate-y-1/2 text-xs px-2 py-1"
+          className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1.5"
           style={{
             color: "var(--text-dim)",
             background: "var(--bg-surface)",
@@ -113,8 +113,7 @@ export function LocationSearch({ onSelect, isLoading }: Props) {
             (e.currentTarget as HTMLButtonElement).style.color = "var(--text-dim)";
           }}
         >
-          <Map size={12} />
-          <span className="hidden sm:inline">Map</span>
+          <MapPin size={15} />
         </button>
       </div>
 

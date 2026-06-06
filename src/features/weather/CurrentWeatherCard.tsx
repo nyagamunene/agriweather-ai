@@ -1,15 +1,12 @@
 "use client";
-import type { CurrentWeather, WeatherLocation } from "@/types/weather";
+import type { CurrentWeather } from "@/types/weather";
 import { getWeatherIcon, getWeatherDescription, formatTemp, getWindDirection, getUVLabel } from "@/lib/utils/weather";
 
 interface Props {
   current: CurrentWeather;
-  location: WeatherLocation;
 }
 
-export function CurrentWeatherCard({ current, location }: Props) {
-  const city = [location.city].filter(Boolean).join("");
-  const region = [location.region, location.country].filter(Boolean).join(", ");
+export function CurrentWeatherCard({ current }: Props) {
 
   return (
     <div
@@ -20,9 +17,9 @@ export function CurrentWeatherCard({ current, location }: Props) {
       }}
       className="p-5"
     >
-      <div className="flex flex-col sm:flex-row sm:items-stretch gap-5">
+      <div className="flex flex-col sm:flex-row sm:items-stretch gap-4">
         {/* Left: temperature block */}
-        <div className="flex-1">
+        <div className="sm:flex-[3] sm:min-w-[240px]">
           <div className="flex items-center gap-2 mb-3">
             <span
               className="text-xs font-mono px-1.5 py-0.5"
@@ -33,16 +30,16 @@ export function CurrentWeatherCard({ current, location }: Props) {
             <p className="text-xs" style={{ color: "var(--text-dim)" }}>Current Conditions</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-5xl leading-none select-none">{getWeatherIcon(current.condition_code)}</div>
+          <div className="flex items-center gap-3">
+            <div className="text-4xl leading-none select-none">{getWeatherIcon(current.condition_code)}</div>
             <div>
               <p
                 className="font-black tracking-tighter leading-none"
-                style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", color: "var(--text)" }}
+                style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)", color: "var(--text)" }}
               >
                 {formatTemp(current.temperature)}
               </p>
-              <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+              <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
                 {getWeatherDescription(current.condition_code)}
               </p>
               {current.feels_like !== undefined && (
@@ -52,21 +49,13 @@ export function CurrentWeatherCard({ current, location }: Props) {
               )}
             </div>
           </div>
-
-          {/* Location label */}
-          {city && (
-            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-soft)" }}>
-              <p className="text-base font-semibold leading-tight" style={{ color: "var(--text)" }}>{city}</p>
-              {region && <p className="text-xs mt-0.5" style={{ color: "var(--text-dim)" }}>{region}</p>}
-            </div>
-          )}
         </div>
 
         {/* Divider */}
-        <div style={{ width: "1px", background: "var(--border-soft)" }} className="hidden sm:block" />
+        <div style={{ width: "1px", background: "var(--border-soft)" }} className="hidden sm:block shrink-0" />
 
         {/* Right: metrics table */}
-        <div className="grid grid-cols-3 sm:grid-cols-3 gap-px" style={{ background: "var(--border-soft)", border: "1px solid var(--border-soft)", borderRadius: "6px", overflow: "hidden" }}>
+        <div className="grid grid-cols-2 gap-px sm:flex-[2]" style={{ background: "var(--border-soft)", border: "1px solid var(--border-soft)", borderRadius: "6px", overflow: "hidden" }}>
           <Metric label="Humidity" value={current.humidity !== undefined ? `${current.humidity}%` : "—"} />
           <Metric label="Wind" value={`${current.wind_speed} km/h`} />
           <Metric label="Direction" value={getWindDirection(current.wind_direction)} />

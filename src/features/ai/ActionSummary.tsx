@@ -6,6 +6,7 @@ interface Props {
   weather: WeatherResponse;
   selectedCrop: CropProfile | null;
   risks: AgriculturalRisk | null;
+  locationName?: string;
 }
 
 interface ActionStatus {
@@ -110,7 +111,7 @@ const severityMeta = {
   urgent: { color: "var(--risk-crit)", bg: "rgba(168,50,50,0.08)", border: "rgba(168,50,50,0.2)", dot: "var(--risk-crit)" },
 };
 
-export function ActionSummary({ weather, selectedCrop, risks }: Props) {
+export function ActionSummary({ weather, selectedCrop, risks, locationName }: Props) {
   const status = deriveActionStatus(weather, selectedCrop, risks);
   const meta = severityMeta[status.severity];
 
@@ -127,6 +128,11 @@ export function ActionSummary({ weather, selectedCrop, risks }: Props) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
+            {locationName && (
+              <span className="text-lg font-bold" style={{ color: "var(--text)" }}>
+                {locationName.split(",")[0]}
+              </span>
+            )}
             <span
               className="w-2 h-2 rounded-full shrink-0"
               style={{ background: meta.dot }}

@@ -226,6 +226,7 @@ export default function DashboardPage() {
             weather={weather}
             selectedCrop={selectedCrop}
             risks={risks}
+            locationName={location.name}
           />
         )}
 
@@ -234,7 +235,6 @@ export default function DashboardPage() {
           <>
             <CurrentWeatherCard
               current={weather.current}
-              location={{ ...weather.location, city: location.name.split(",")[0], region: location.state, country: location.country }}
             />
 
             {/* Stats row */}
