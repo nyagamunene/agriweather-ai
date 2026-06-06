@@ -220,6 +220,7 @@ See [SCALING.md](./SCALING.md) for a detailed discussion of:
 - Horizontal scaling and stateless design
 - Circuit breaker and graceful degradation
 - Observability and structured logging
+- Multitenancy — tenant isolation, RLS, team roles, and multi-farm views
 
 ---
 

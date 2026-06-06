@@ -121,7 +121,62 @@ For a production agricultural platform, some workloads should be async:
 
 ---
 
-## 7. Data Privacy & Security
+## 9. Multitenancy
+
+AgriWeather AI is designed to evolve from a single-user weather dashboard into a multitenant platform serving cooperatives, agribusinesses, and extension officers managing multiple farms.
+
+### Tenant Model
+
+| Dimension | Single-tenant (today) | Multitenant (planned) |
+|---|---|---|
+| Data isolation | No auth; one global data pool | Row-Level Security (RLS) + `tenant_id` foreign key on all tables |
+| User identity | None | Clerk / NextAuth — email, OAuth, passkey |
+| Rate limits | Shared WeatherAI quota | Per-tenant quota pools (Pro vs. Enterprise tiers) |
+| Caching | Keyed by `{lat}:{lon}` | Keyed by `{tenant}:{lat}:{lon}:{days}` |
+| Pricing | Free | Per-farm, per-cooperative, or per-API-call |
+
+### Database Strategy
+
+```
+ALTER TABLE locations ADD COLUMN tenant_id UUID REFERENCES tenants(id);
+ALTER TABLE plots    ADD COLUMN tenant_id UUID REFERENCES tenants(id);
+ALTER TABLE tree_analyses ADD COLUMN tenant_id UUID REFERENCES tenants(id);
+
+-- Row-Level Security
+ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON locations
+  USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+```
+
+All queries pass through a middleware that sets `app.current_tenant_id` from the JWT/session, enforced at the PostgreSQL level (not application code). No `WHERE tenant_id = $1` scattered across queries — just `SET LOCAL app.current_tenant_id` once per request.
+
+### Team & Roles
+
+| Role | Permissions |
+|---|---|
+| Owner | Full CRUD, billing, invite members |
+| Manager | Manage farms, view reports, edit plots |
+| Viewer | Read-only dashboard and reports |
+| Extension Officer | Multi-farm view across assigned tenants |
+
+Invites use magic-link emails; user membership stored in `tenant_members(user_id, tenant_id, role)`.
+
+### Cache & Background Job Partitioning
+
+- Redis keys prefixed with `tenant:{id}:` — cache invalidation scoped per tenant.
+- BullMQ queues namespaced per tenant (`alerts:{tenant_id}`) — one tenant's alert spike doesn't delay another's.
+- Rate limit counters in Redis: `ratelimit:{tenant_id}:weather_ai:month`.
+- Each tenant gets isolated quota. Overuse by one never degrades service for others.
+
+### Multi-Farm Views
+
+- Extension officers switch between farms via a dropdown selector (already prototyped as `SavedFarms`).
+- Aggregate dashboards: "All farms in Kiambu at a glance" — cross-tenant analytics for county-level officers.
+- Bulk operations: broadcast a weather alert or spray recommendation to all farms in a tenant.
+
+---
+
+## 10. Data Privacy & Security
 
 - API key stored server-side only (never exposed to client)
 - Location data is coordinates only; no PII collected
@@ -130,7 +185,7 @@ For a production agricultural platform, some workloads should be async:
 
 ---
 
-## 8. Cost Optimization
+## 11. Cost Optimization
 
 | Strategy | Estimated savings |
 |---|---|
